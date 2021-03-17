@@ -26,7 +26,7 @@ registerUserAndAuthorizeCompany = async (queryParams, connectionParams) => {
     try {
 
         // Authenticate user
-        let user = await authController.register({
+        const user = await authController.register({
             idNumber: queryParams.idNumber,
             birthDate: queryParams.birthDate,
             email: queryParams.email,
@@ -68,7 +68,7 @@ loginUserAndAuthorizeCompany = async (queryParams, connectionParams) => {
     try {
 
         // Authenticate user
-        let auth = await authController.login({
+        const auth = await authController.login({
             email: queryParams.email,
             password: queryParams.password,
             jwtsecret: queryParams.jwtsecret
@@ -94,7 +94,7 @@ loginUserAndAuthorizeCompany = async (queryParams, connectionParams) => {
             user.data.authorizedCompanies = (user.data.authorizedCompanies || []).map(el => el._id);
 
             // Authorize client
-            let authorizedCompany = await authorizedCompanyController.readOneById({
+            const authorizedCompany = await authorizedCompanyController.readOneById({
                 id: queryParams.clientId
             }, {
                 connectionString: connectionParams.connectionString
@@ -103,15 +103,13 @@ loginUserAndAuthorizeCompany = async (queryParams, connectionParams) => {
                 let userToUpdate = user.data;
 
                 // @todo Check if company has already authorized
-                let authorizedCompanies = (userToUpdate['authorizedCompanies'] || []);
+                const authorizedCompanies = (userToUpdate['authorizedCompanies'] || []);
                 if (!authorizedCompanies.includes(authorizedCompany.data._id))
                     userToUpdate['authorizedCompanies'] = [...authorizedCompanies, authorizedCompany.data._id];
 
-                let userUpdated = await userController.update(
-                    userToUpdate, {
-                        connectionString: connectionParams.connectionString
-                    }
-                )
+                const userUpdated = await userController.update(
+                    userToUpdate, { connectionString: connectionParams.connectionString },
+                );
 
                 if (userUpdated.code === 200) {
                     return {
@@ -145,8 +143,8 @@ loginUserAndAuthorizeCompany = async (queryParams, connectionParams) => {
 authorizeCompany = async (queryParams, connectionParams) => {
     try {
         // Get user id in jwt
-        let jwt_claim = await jwt.verify(queryParams.authentication_token, queryParams.jwtsecret);
-        let user_id = jwt_claim.id;
+        const jwt_claim = await jwt.verify(queryParams.authentication_token, queryParams.jwtsecret);
+        const user_id = jwt_claim.id;
 
         // Get user info
         let user = await userController.readOneByIdNumber({
@@ -160,7 +158,7 @@ authorizeCompany = async (queryParams, connectionParams) => {
         user.data.authorizedCompanies = (user.data.authorizedCompanies || []).map(el => el._id);
 
         // Authorize client
-        let authorizedCompany = await authorizedCompanyController.readOneById({
+        const authorizedCompany = await authorizedCompanyController.readOneById({
             id: queryParams.clientId
         }, {
             connectionString: connectionParams.connectionString
@@ -169,15 +167,14 @@ authorizeCompany = async (queryParams, connectionParams) => {
             let userToUpdate = user.data;
 
             // @todo Check if company has already authorized
-            let authorizedCompanies = (userToUpdate['authorizedCompanies'] || []);
+            const authorizedCompanies = (userToUpdate['authorizedCompanies'] || []);
             if (!authorizedCompanies.includes(authorizedCompany.data._id))
                 userToUpdate['authorizedCompanies'] = [...authorizedCompanies, authorizedCompany.data._id];
 
-            let userUpdated = await userController.update(
-                userToUpdate, {
-                    connectionString: connectionParams.connectionString
-                }
-            )
+            const userUpdated = await userController.update(
+                userToUpdate, { connectionString: connectionParams.connectionString }
+            );
+
             if (userUpdated.code === 200) {
                 return {
                     "redirectUri": authorizedCompany.data.redirectUri
@@ -206,8 +203,8 @@ authorizeCompany = async (queryParams, connectionParams) => {
 getUserInfo = async (queryParams, connectionParams) => {
     try {
         // Get user id in jwt
-        let jwt_claim = await jwt.verify(queryParams.authentication_token, queryParams.jwtsecret);
-        let user_id = jwt_claim.id;
+        const jwt_claim = await jwt.verify(queryParams.authentication_token, queryParams.jwtsecret);
+        const user_id = jwt_claim.id;
 
         // Get user info
         let user = await userController.readOneByIdNumber({
@@ -220,16 +217,16 @@ getUserInfo = async (queryParams, connectionParams) => {
         user.data.authorizedCompanies = (user.data.authorizedCompanies || []).map(el => el._id);
 
         // Authorize client
-        let authorizedCompany = await authorizedCompanyController.readOneById({
+        const authorizedCompany = await authorizedCompanyController.readOneById({
             id: queryParams.clientId
         }, {
             connectionString: connectionParams.connectionString
         })
-        
+
         if (authorizedCompany.data.name) {
 
             // Check if company has authorization
-            let authorizedCompanies = (user.data.authorizedCompanies || []);
+            const authorizedCompanies = (user.data.authorizedCompanies || []);
             if (!authorizedCompanies.includes(authorizedCompany.data._id)) {
                 throw {
                     message: 'Client has no authorization to get user info',

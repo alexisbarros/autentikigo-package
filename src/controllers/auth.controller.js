@@ -29,20 +29,20 @@ exports.register = async (queryParams, connectionParams) => {
     try {
 
         // Check if email alredy exists
-        let users = await userController.readAll(connectionParams);
-        if(
-            users.data && 
+        const users = await userController.readAll(connectionParams);
+        if (
+            users.data &&
             users.data.filter(user => user.email === queryParams.email).length
         ) throw { message: 'The email has already been registered' }
 
 
         // Check if person alredy exists
-        let person = await personController.readOneByIdNumber(queryParams, connectionParams);
-        if(!person.data.idNumber){
+        const person = await personController.readOneByIdNumber(queryParams, connectionParams);
+        if (!person.data.idNumber) {
             // @todo: create person with api cpf/cnpj
 
             // Mock: start
-            let personToAdd = {
+            const personToAdd = {
                 idNumber: queryParams.idNumber,
                 country: 'br',
                 fullname: 'Teste',
@@ -50,8 +50,8 @@ exports.register = async (queryParams, connectionParams) => {
                 mothersName: 'Mãe teste',
                 birthDate: new Date('2021-03-02'),
             };
-            let newPerson = await personController.create(personToAdd, connectionParams);
-            if(newPerson.code !== 200){
+            const newPerson = await personController.create(personToAdd, connectionParams);
+            if (newPerson.code !== 200) {
                 throw { message: newPerson.message }
             } else {
                 person.data = newPerson.data;
@@ -61,41 +61,41 @@ exports.register = async (queryParams, connectionParams) => {
         } else {
 
             // Check if birthDate is correct
-            if(queryParams.birthDate !== person.data.birthDate){
+            if (queryParams.birthDate !== person.data.birthDate) {
                 throw { message: 'Birth date doesnt correspond to the CPF' }
             }
         }
 
         // Create a user in db
-        let userToRegister = {
+        const userToRegister = {
             email: queryParams.email,
             password: queryParams.password,
             type: 'person',
             personInfo: person.data._id,
             authorizedCompanies: [],
         }
-        let user = await userController.create(userToRegister, connectionParams);
-        if(user.code === 400) throw { message: user.message }
+        const user = await userController.create(userToRegister, connectionParams);
+        if (user.code === 400) throw { message: user.message }
 
         // Generate token
-        let authentication_token = jwt.sign({ id: user.data._id, email: user.data.email }, queryParams.jwtsecret);
-        
+        const authentication_token = jwt.sign({ id: user.data._id, email: user.data.email }, queryParams.jwtsecret);
+
         // Create user to send to front
-        let dataToFront = {
+        const dataToFront = {
             authentication_token: authentication_token
         };
 
         console.info('User successfully registered');
-        return({
+        return ({
             data: dataToFront,
             message: 'User successfully registered',
             code: 200
         });
 
-    } catch(err){
+    } catch (err) {
 
         console.error(err.message);
-        return({
+        return ({
             data: {},
             message: err.message,
             code: 400
@@ -119,24 +119,24 @@ exports.login = async (queryParams, connectionParams) => {
     try {
 
         // Connect to database
-        await mongoose.connect(connectionParams.connectionString, { 
+        await mongoose.connect(connectionParams.connectionString, {
             useNewUrlParser: true,
             useUnifiedTopology: true
         });
 
         // Search user
-        let user = await User.findOne({ email: queryParams.email });
-        if(!user) throw { message: 'User not found' };
-             
+        const user = await User.findOne({ email: queryParams.email });
+        if (!user) throw { message: 'User not found' };
+
         // Check pass
-        let isChecked = await bcrypt.compare(queryParams.password, user.password);
-        if(isChecked){
+        const isChecked = await bcrypt.compare(queryParams.password, user.password);
+        if (isChecked) {
 
             // Generate token
-            let authentication_token = jwt.sign({ id: user._id, email: user.email }, queryParams.jwtsecret);
+            const authentication_token = jwt.sign({ id: user._id, email: user.email }, queryParams.jwtsecret);
 
             // Create user data to return
-            let userToFront = {
+            const userToFront = {
                 _id: user._id,
                 email: user.email,
                 authentication_token: authentication_token
@@ -144,9 +144,9 @@ exports.login = async (queryParams, connectionParams) => {
 
             // Disconnect to database
             await mongoose.disconnect();
-            
+
             console.info('User successfully logged');
-            return({
+            return ({
                 data: userToFront,
                 message: 'User successfully logged.',
                 code: 200
@@ -158,13 +158,13 @@ exports.login = async (queryParams, connectionParams) => {
 
         }
 
-    } catch(err) {
+    } catch (err) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
         console.error(err.message);
-        return({
+        return ({
             data: {},
             message: err.message,
             code: 400

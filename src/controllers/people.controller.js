@@ -22,39 +22,39 @@ const personDTO = require('../dto/person-dto');
 exports.create = async (queryParams, connectionParams) => {
 
     try {
-        
+
         // Connect to database
-        await mongoose.connect(connectionParams.connectionString, { 
+        await mongoose.connect(connectionParams.connectionString, {
             useNewUrlParser: true,
             useUnifiedTopology: true
         });
 
         // Create person in database
-        let person = await Person.create(personDTO.getPersonDTO(queryParams));
-    
+        const person = await Person.create(personDTO.getPersonDTO(queryParams));
+
         // Disconnect to database
         await mongoose.disconnect();
 
         // Create person data to return
-        let personToFront = {
+        const personToFront = {
             ...personDTO.getPersonDTO(person),
             _id: person._id,
         };
-        
+
         console.info('Person created successfuly');
-        return({
+        return ({
             data: personToFront,
             message: 'Person created successfuly',
             code: 200
         });
 
-    } catch(err) {
+    } catch (err) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
         console.error(err.message);
-        return({
+        return ({
             data: {},
             message: err.message,
             code: 400
@@ -76,42 +76,42 @@ exports.readOneByIdNumber = async (queryParams, connectionParams) => {
     try {
 
         // Connect to database
-        await mongoose.connect(connectionParams.connectionString, { 
+        await mongoose.connect(connectionParams.connectionString, {
             useNewUrlParser: true,
             useUnifiedTopology: true
         });
-        
+
         // Get person by idNumber
-        let person = await Person.find({
+        const person = await Person.find({
             idNumber: queryParams.idNumber
         });
-        
+
         // Check if person was removed
-        if(person._deletedAt) throw { message: 'Person removed' };
+        if (person._deletedAt) throw { message: 'Person removed' };
 
         // Create person data to return
-        let personToFront = {
+        const personToFront = {
             ...personDTO.getPersonDTO(person),
             _id: person._id,
         };
-        
+
         // Disconnect to database
         await mongoose.disconnect();
-        
+
         console.info('Person returned successfully');
-        return({
+        return ({
             data: personToFront,
             message: 'Person returned successfully',
             code: 200
         });
 
-    } catch(err) {
+    } catch (err) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
         console.error(err.message);
-        return({
+        return ({
             data: {},
             message: err.message,
             code: 400
@@ -129,15 +129,15 @@ exports.readOneByIdNumber = async (queryParams, connectionParams) => {
 exports.readAll = async (connectionParams) => {
 
     try {
-        
+
         // Connect to database
-        await mongoose.connect(connectionParams.connectionString, { 
+        await mongoose.connect(connectionParams.connectionString, {
             useNewUrlParser: true,
             useUnifiedTopology: true
         });
-        
+
         // Get all people
-        let people = await Person.find({});
+        const people = await Person.find({});
 
         // Filter person tha wasnt removed
         let peopleToFront = people.filter(person => !person._deletedAt);
@@ -149,24 +149,24 @@ exports.readAll = async (connectionParams) => {
                 _id: person._id,
             };
         });
-        
+
         // Disconnect to database
         await mongoose.disconnect();
-        
+
         console.info('People returned successfully');
-        return({
+        return ({
             data: peopleToFront,
             message: 'People returned successfully',
             code: 200
         });
 
-    } catch(err) {
+    } catch (err) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
         console.error(err.message);
-        return({
+        return ({
             data: [],
             message: err.message,
             code: 400
@@ -194,43 +194,43 @@ exports.update = async (queryParams, connectionParams) => {
     try {
 
         // Connect to database
-        await mongoose.connect(connectionParams.connectionString, { 
+        await mongoose.connect(connectionParams.connectionString, {
             useNewUrlParser: true,
             useUnifiedTopology: true
         });
-    
+
         // Update person data
-        let person = await Person.findByIdAndUpdate(
-            queryParams._id, 
+        const person = await Person.findByIdAndUpdate(
+            queryParams._id,
             {
                 ...personDTO.getPersonDTO(queryParams),
                 _updatedAt: Date.now(),
             }
         );
-    
+
         // Disconnect to database
         await mongoose.disconnect();
 
         // Create person data to return
-        let personToFront = {
+        const personToFront = {
             ...personDTO.getPersonDTO(person),
             _id: person._id,
         };
-        
+
         console.info('Person updated successfuly');
-        return({
+        return ({
             data: personToFront,
             message: 'Person updated successfuly',
             code: 200
         });
 
-    } catch(err) {
+    } catch (err) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
         console.error(err.message);
-        return({
+        return ({
             data: [],
             message: err.message,
             code: 400
@@ -252,31 +252,31 @@ exports.delete = async (queryParams, connectionParams) => {
     try {
 
         // Connect to database
-        await mongoose.connect(connectionParams.connectionString, { 
+        await mongoose.connect(connectionParams.connectionString, {
             useNewUrlParser: true,
             useUnifiedTopology: true
         });
-        
+
         // Delete person by id
         await Person.findByIdAndUpdate(queryParams.id, { _deletedAt: Date.now() });
-    
+
         // Disconnect to database
         await mongoose.disconnect();
-    
+
         console.info('Person deleted successfuly');
-        return({
+        return ({
             data: {},
             message: 'Person deleted successfuly',
             code: 200
         });
-        
-    } catch(err) {
+
+    } catch (err) {
 
         // Disconnect to database
         await mongoose.disconnect();
-        
+
         console.error(err.message);
-        return({
+        return ({
             data: [],
             message: err.message,
             code: 400
