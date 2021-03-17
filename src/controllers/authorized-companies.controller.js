@@ -1,6 +1,7 @@
 // Modules
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const httpResponse = require('../utils/http-response');
 
 // Model
 const AuthorizedCompany = require('../models/authorized-companies.model');
@@ -44,24 +45,14 @@ exports.create = async (queryParams, connectionParams) => {
             _id: authorizedCompany._id,
         };
 
-        console.info('Authorized Company created successfuly');
-        return ({
-            data: authorizedCompanyToFront,
-            message: 'Authorized Company created successfuly',
-            code: 200
-        });
+        return httpResponse.ok('Authorized Company created successfuly', authorizedCompanyToFront);
 
-    } catch (err) {
+    } catch (e) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.error(err.message);
-        return ({
-            data: {},
-            message: err.message,
-            code: 400
-        });
+        return httpResponse.error(e.name + ': ' + e.message, {});
 
     }
 
@@ -88,7 +79,7 @@ exports.readOneById = async (queryParams, connectionParams) => {
         const authorizedCompany = await AuthorizedCompany.findById(queryParams.id);
 
         // Check if authorizedCompany was removed
-        if (authorizedCompany._deletedAt) throw { message: 'Authorized Company removed' };
+        if (authorizedCompany._deletedAt) throw new Error('Authorized Company removed');
 
         // Create authorizedCompany data to return
         const authorizedCompanyToFront = {
@@ -99,24 +90,14 @@ exports.readOneById = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.info('Authorized Company returned successfully');
-        return ({
-            data: authorizedCompanyToFront,
-            message: 'Authorized Company returned successfully',
-            code: 200
-        });
+        return httpResponse.ok('Authorized Company returned successfully', authorizedCompanyToFront);
 
-    } catch (err) {
+    } catch (e) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.error(err.message);
-        return ({
-            data: {},
-            message: err.message,
-            code: 400
-        });
+        return httpResponse.error(e.name + ': ' + e.message, {});
 
     }
 
@@ -154,24 +135,14 @@ exports.readAll = async (connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.info('Authorized Companies returned successfully');
-        return ({
-            data: authorizedCompaniesToFront,
-            message: 'Authorized Companies returned successfully',
-            code: 200
-        });
+        return httpResponse.ok('Authorized Companies returned successfully', authorizedCompaniesToFront);
 
-    } catch (err) {
+    } catch (e) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.error(err.message);
-        return ({
-            data: [],
-            message: err.message,
-            code: 400
-        });
+        return httpsResponse.error(e.name + ': ' + e.message, {});
 
     }
 
@@ -214,24 +185,14 @@ exports.update = async (queryParams, connectionParams) => {
             _id: authorizedCompany._id,
         };
 
-        console.info('Authorized Company updated successfuly');
-        return ({
-            data: authorizedCompanyToFront,
-            message: 'Authorized Company updated successfuly',
-            code: 200
-        });
+        return httpResponse.ok('Authorized Company updated successfuly', authorizedCompanyToFront);
 
-    } catch (err) {
+    } catch (e) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.error(err.message);
-        return ({
-            data: [],
-            message: err.message,
-            code: 400
-        });
+        return httpResponse.error(e.name + ': ' + e.message, {});
 
     }
 
@@ -260,24 +221,14 @@ exports.delete = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.info('Authorized Company deleted successfuly');
-        return ({
-            data: {},
-            message: 'Authorized Company deleted successfuly',
-            code: 200
-        });
+        return httpResponse.ok('Authorized Company deleted successfuly', {});
 
-    } catch (err) {
+    } catch (e) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.error(err.message);
-        return ({
-            data: [],
-            message: err.message,
-            code: 400
-        });
+        return httpResponse.error(e.name + ': ' + e.message, {});
 
     }
 

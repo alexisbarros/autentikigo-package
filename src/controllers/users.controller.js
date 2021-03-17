@@ -1,6 +1,7 @@
 // Modules
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const httpResponse = require('../utils/http-response');
 
 // Model
 const User = require('../models/users.model');
@@ -46,24 +47,14 @@ exports.create = async (queryParams, connectionParams) => {
             _id: user._id,
         };
 
-        console.info('User created successfuly');
-        return ({
-            data: userToFront,
-            message: 'User created successfuly',
-            code: 200
-        });
+        return httpResponse.ok('User created successfuly', userToFront);
 
-    } catch (err) {
+    } catch (e) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.error(err.message);
-        return ({
-            data: {},
-            message: err.message,
-            code: 400
-        });
+        return httpResponse.error(e.name + ': ' + e.message, {});
 
     }
 
@@ -93,7 +84,7 @@ exports.readOneByIdNumber = async (queryParams, connectionParams) => {
             .exec();
 
         // Check if user was removed
-        if (user._deletedAt) throw { message: 'User removed' };
+        if (user._deletedAt) new Error('User removed');
 
         // Create user data to return
         const userToFront = {
@@ -104,24 +95,14 @@ exports.readOneByIdNumber = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.info('User returned successfully');
-        return ({
-            data: userToFront,
-            message: 'User returned successfully',
-            code: 200
-        });
+        return httpResponse.ok('User returned successfully', userToFront);
 
-    } catch (err) {
+    } catch (e) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.error(err.message);
-        return ({
-            data: {},
-            message: err.message,
-            code: 400
-        });
+        return httpResponse.error(e.name + ': ' + e.message, {});
 
     }
 
@@ -162,24 +143,14 @@ exports.readAll = async (connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.info('Users returned successfully');
-        return ({
-            data: usersToFront,
-            message: 'Users returned successfully',
-            code: 200
-        });
+        return httpResponse.ok('Users returned successfully', usersToFront);
 
-    } catch (err) {
+    } catch (e) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.error(err.message);
-        return ({
-            data: [],
-            message: err.message,
-            code: 400
-        });
+        return httpResponse.error(e.name + ': ' + e.message, {});
 
     }
 
@@ -224,24 +195,14 @@ exports.update = async (queryParams, connectionParams) => {
             _id: user._id,
         };
 
-        console.info('User updated successfuly');
-        return ({
-            data: userToFront,
-            message: 'User updated successfuly',
-            code: 200
-        });
+        return httpResponse.ok('User updated successfuly', userToFront);
 
-    } catch (err) {
+    } catch (e) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.error(err.message);
-        return ({
-            data: [],
-            message: err.message,
-            code: 400
-        });
+        return httpResponse.error(e.name + ': ' + e.message, {});
 
     }
 
@@ -270,24 +231,14 @@ exports.delete = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.info('User deleted successfuly');
-        return ({
-            data: {},
-            message: 'User deleted successfuly',
-            code: 200
-        });
+        return httpResponse.ok('User deleted successfuly', {});
 
-    } catch (err) {
+    } catch (e) {
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.error(err.message);
-        return ({
-            data: [],
-            message: err.message,
-            code: 400
-        });
+        return httpResponse.error(e.name + ': ' + e.message, {});
 
     }
 

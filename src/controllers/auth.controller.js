@@ -2,6 +2,7 @@
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const httpResponse = require('../utils/http-response');
 
 // Controllers
 const userController = require('./users.controller');
@@ -33,7 +34,7 @@ exports.register = async (queryParams, connectionParams) => {
         if (
             users.data &&
             users.data.filter(user => user.email === queryParams.email).length
-        ) throw { message: 'The email has already been registered' }
+        ) throw new Error('The email has already been registered');
 
 
         // Check if person alredy exists
@@ -52,7 +53,7 @@ exports.register = async (queryParams, connectionParams) => {
             };
             const newPerson = await personController.create(personToAdd, connectionParams);
             if (newPerson.code !== 200) {
-                throw { message: newPerson.message }
+                throw new Error(newPerson.message);
             } else {
                 person.data = newPerson.data;
             }
@@ -62,7 +63,7 @@ exports.register = async (queryParams, connectionParams) => {
 
             // Check if birthDate is correct
             if (queryParams.birthDate !== person.data.birthDate) {
-                throw { message: 'Birth date doesnt correspond to the CPF' }
+                throw new Error('Birth date doesnt correspond to the CPF');
             }
         }
 
@@ -75,7 +76,7 @@ exports.register = async (queryParams, connectionParams) => {
             authorizedCompanies: [],
         }
         const user = await userController.create(userToRegister, connectionParams);
-        if (user.code === 400) throw { message: user.message }
+        if (user.code === 400) throw new Error(user.message);
 
         // Generate token
         const authentication_token = jwt.sign({ id: user.data._id, email: user.data.email }, queryParams.jwtsecret);
@@ -85,21 +86,11 @@ exports.register = async (queryParams, connectionParams) => {
             authentication_token: authentication_token
         };
 
-        console.info('User successfully registered');
-        return ({
-            data: dataToFront,
-            message: 'User successfully registered',
-            code: 200
-        });
+        return httpResponse.ok('User successfully registered', dataToFront);
 
-    } catch (err) {
+    } catch (e) {
 
-        console.error(err.message);
-        return ({
-            data: {},
-            message: err.message,
-            code: 400
-        });
+        return httpResponse.error(e.name + ': ' + e.message, {});
 
     }
 
@@ -126,49 +117,34 @@ exports.login = async (queryParams, connectionParams) => {
 
         // Search user
         const user = await User.findOne({ email: queryParams.email });
-        if (!user) throw { message: 'User not found' };
+        if (!user) throw new Error('User not found');
 
         // Check pass
         const isChecked = await bcrypt.compare(queryParams.password, user.password);
-        if (isChecked) {
 
-            // Generate token
-            const authentication_token = jwt.sign({ id: user._id, email: user.email }, queryParams.jwtsecret);
+        if (!isChecked) throw new Error('Incorrect password');
 
-            // Create user data to return
-            const userToFront = {
-                _id: user._id,
-                email: user.email,
-                authentication_token: authentication_token
-            };
+        // Generate token
+        const authentication_token = jwt.sign({ id: user._id, email: user.email }, queryParams.jwtsecret);
 
-            // Disconnect to database
-            await mongoose.disconnect();
-
-            console.info('User successfully logged');
-            return ({
-                data: userToFront,
-                message: 'User successfully logged.',
-                code: 200
-            })
-
-        } else {
-
-            throw { message: 'Incorrect password' }
-
-        }
-
-    } catch (err) {
+        // Create user data to return
+        const userToFront = {
+            _id: user._id,
+            email: user.email,
+            authentication_token: authentication_token
+        };
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        console.error(err.message);
-        return ({
-            data: {},
-            message: err.message,
-            code: 400
-        });
+        return httpResponse.ok('User successfully logged', userToFront);
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
 
     }
 

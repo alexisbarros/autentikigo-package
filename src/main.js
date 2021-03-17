@@ -1,5 +1,6 @@
 // Modules
 const jwt = require('jsonwebtoken');
+const httpResponse = require('./utils/http-response');
 
 // Controllers
 const authController = require('./controllers/auth.controller');
@@ -36,19 +37,15 @@ registerUserAndAuthorizeCompany = async (queryParams, connectionParams) => {
             connectionString: connectionParams.connectionString
         });
 
-        if (user.code !== 200) {
-            throw {
-                message: user.message
-            }
-        } else {
+        if (user.code !== 200) throw new Error(user.message);
 
-            // Authorize client
-            return loginUserAndAuthorizeCompany(queryParams, connectionParams);
-
-        }
+        // Authorize client
+        return loginUserAndAuthorizeCompany(queryParams, connectionParams);
 
     } catch (e) {
-        return e.message;
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
+
     }
 
 }
@@ -76,58 +73,52 @@ loginUserAndAuthorizeCompany = async (queryParams, connectionParams) => {
             connectionString: connectionParams.connectionString
         });
 
-        if (auth.code !== 200) {
-            throw {
-                message: auth.message
-            }
-        } else {
+        if (auth.code !== 200) throw new Error(auth.message);
 
-            // Get user info
-            let user = await userController.readOneByIdNumber({
-                id: auth.data._id
-            }, {
-                connectionString: connectionParams.connectionString
-            });
+        // Get user info
+        let user = await userController.readOneByIdNumber({
+            id: auth.data._id
+        }, {
+            connectionString: connectionParams.connectionString
+        });
 
-            // Transform user info and authorized companies in array of objectId
-            user.data.personInfo = user.data.personInfo._id;
-            user.data.authorizedCompanies = (user.data.authorizedCompanies || []).map(el => el._id);
+        // Transform user info and authorized companies in array of objectId
+        user.data.personInfo = user.data.personInfo._id;
+        user.data.authorizedCompanies = (user.data.authorizedCompanies || []).map(el => el._id);
 
-            // Authorize client
-            const authorizedCompany = await authorizedCompanyController.readOneById({
-                id: queryParams.clientId
-            }, {
-                connectionString: connectionParams.connectionString
-            })
-            if (authorizedCompany.data.name) {
-                let userToUpdate = user.data;
+        // Authorize client
+        const authorizedCompany = await authorizedCompanyController.readOneById({
+            id: queryParams.clientId
+        }, {
+            connectionString: connectionParams.connectionString
+        })
 
-                // @todo Check if company has already authorized
-                const authorizedCompanies = (userToUpdate['authorizedCompanies'] || []);
-                if (!authorizedCompanies.includes(authorizedCompany.data._id))
-                    userToUpdate['authorizedCompanies'] = [...authorizedCompanies, authorizedCompany.data._id];
+        if (!authorizedCompany.data.name) throw new Erros('Client does not exist. Check your client Id');
 
-                const userUpdated = await userController.update(
-                    userToUpdate, { connectionString: connectionParams.connectionString },
-                );
+        let userToUpdate = user.data;
 
-                if (userUpdated.code === 200) {
-                    return {
-                        "autentikigo-token": auth.data.authentication_token,
-                        "redirectUri": authorizedCompany.data.redirectUri
-                    }
-                }
+        // Check if company has already authorized
+        const authorizedCompanies = (userToUpdate['authorizedCompanies'] || []);
+        if (!authorizedCompanies.includes(authorizedCompany.data._id))
+            userToUpdate['authorizedCompanies'] = [...authorizedCompanies, authorizedCompany.data._id];
 
-            } else {
-                throw {
-                    message: 'Client does not exist. Check your client Id'
-                }
+        const userUpdated = await userController.update(
+            userToUpdate, { connectionString: connectionParams.connectionString },
+        );
+
+        if (userUpdated.code === 200) {
+            const dataToReturn = {
+                "autentikigo-token": auth.data.authentication_token,
+                "redirectUri": authorizedCompany.data.redirectUri
             }
 
+            return httpResponse.ok('Successfull login and authorize', dataToReturn);
         }
 
     } catch (e) {
-        return e.message;
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
+
     }
 }
 
@@ -162,32 +153,33 @@ authorizeCompany = async (queryParams, connectionParams) => {
             id: queryParams.clientId
         }, {
             connectionString: connectionParams.connectionString
-        })
-        if (authorizedCompany.data.name) {
-            let userToUpdate = user.data;
+        });
 
-            // @todo Check if company has already authorized
-            const authorizedCompanies = (userToUpdate['authorizedCompanies'] || []);
-            if (!authorizedCompanies.includes(authorizedCompany.data._id))
-                userToUpdate['authorizedCompanies'] = [...authorizedCompanies, authorizedCompany.data._id];
+        if (!authorizedCompany.data.name) throw new Error('Client does not exist. Check your client Id');
 
-            const userUpdated = await userController.update(
-                userToUpdate, { connectionString: connectionParams.connectionString }
-            );
+        let userToUpdate = user.data;
 
-            if (userUpdated.code === 200) {
-                return {
-                    "redirectUri": authorizedCompany.data.redirectUri
-                }
-            }
+        // @todo Check if company has already authorized
+        const authorizedCompanies = (userToUpdate['authorizedCompanies'] || []);
+        if (!authorizedCompanies.includes(authorizedCompany.data._id))
+            userToUpdate['authorizedCompanies'] = [...authorizedCompanies, authorizedCompany.data._id];
 
-        } else {
-            throw {
-                message: 'Client does not exist. Check your client Id'
-            }
+        const userUpdated = await userController.update(
+            userToUpdate, { connectionString: connectionParams.connectionString }
+        );
+
+        if (userUpdated.code === 200) {
+            const dataToReturn = {
+                "redirectUri": authorizedCompany.data.redirectUri
+            };
+
+            return httpResponse.ok('Company authorized', dataToReturn);
         }
+
     } catch (e) {
-        return e.message;
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
+
     }
 }
 
@@ -223,29 +215,26 @@ getUserInfo = async (queryParams, connectionParams) => {
             connectionString: connectionParams.connectionString
         })
 
-        if (authorizedCompany.data.name) {
+        if (!authorizedCompany.data.name) throw new Error('Client does not exist. Check your client Id');
 
-            // Check if company has authorization
-            const authorizedCompanies = (user.data.authorizedCompanies || []);
-            if (!authorizedCompanies.includes(authorizedCompany.data._id)) {
-                throw {
-                    message: 'Client has no authorization to get user info',
-                }
-            }
-
-            if (user.code === 200) {
-                return {
-                    "userInfo": personDTO.getPersonDTO(user.data.personInfo)
-                }
-            }
-
-        } else {
-            throw {
-                message: 'Client does not exist. Check your client Id'
-            }
+        // Check if company has authorization
+        const authorizedCompanies = (user.data.authorizedCompanies || []);
+        if (!authorizedCompanies.includes(authorizedCompany.data._id)) {
+            throw new Error('Client has no authorization to get user info');
         }
+
+        if (user.code === 200) {
+            const dataToReturn = {
+                "userInfo": personDTO.getPersonDTO(user.data.personInfo)
+            };
+
+            return httpResponse.ok('Get user info successfull', dataToReturn);
+        }
+
     } catch (e) {
-        return e.message;
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
+
     }
 }
 
