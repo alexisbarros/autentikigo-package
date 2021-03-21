@@ -21,7 +21,8 @@ const User = require('../models/users.model');
  * @property    {date}      birthDate           -required
  * @property    {string}    email               -required
  * @property    {string}    password            -required
- * @property    {string}    jwtsecret           -required
+ * @property    {string}    jwtSecret           -required
+ * @property    {string}    jwtRefreshSecret    -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -79,11 +80,13 @@ exports.register = async (queryParams, connectionParams) => {
         if (user.code === 400) throw new Error(user.message);
 
         // Generate token
-        const authentication_token = jwt.sign({ id: user.data._id, email: user.data.email }, queryParams.jwtsecret);
+        const authentication_token = jwt.sign({ id: user.data._id }, queryParams.jwtSecret, { expiresIn: '10m' });
+        const authentication_refresh_token = jwt.sign({ id: user.data._id }, queryParams.jwtRefreshSecret, { expiresIn: '7d' });
 
         // Create user to send to front
         const dataToFront = {
-            authentication_token: authentication_token
+            authentication_token: authentication_token,
+            authentication_refresh_token: authentication_refresh_token
         };
 
         return httpResponse.ok('User successfully registered', dataToFront);
@@ -101,7 +104,8 @@ exports.register = async (queryParams, connectionParams) => {
  * @param       {object}    queryParams         -required
  * @property    {string}    email               -required
  * @property    {string}    password            -required
- * @property    {string}    jwtsecret           -required
+ * @property    {string}    jwtSecret           -required
+ * @property    {string}    jwtRefreshSecret    -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -125,13 +129,15 @@ exports.login = async (queryParams, connectionParams) => {
         if (!isChecked) throw new Error('Incorrect password');
 
         // Generate token
-        const authentication_token = jwt.sign({ id: user._id, email: user.email }, queryParams.jwtsecret);
+        const authentication_token = jwt.sign({ id: user._id }, queryParams.jwtSecret, { expiresIn: '10m' });
+        const authentication_refresh_token = jwt.sign({ id: user._id }, queryParams.jwtRefreshSecret, { expiresIn: '7d' });
 
         // Create user data to return
         const userToFront = {
             _id: user._id,
             email: user.email,
-            authentication_token: authentication_token
+            authentication_token: authentication_token,
+            authentication_refresh_token: authentication_refresh_token,
         };
 
         // Disconnect to database
@@ -148,4 +154,36 @@ exports.login = async (queryParams, connectionParams) => {
 
     }
 
+}
+
+/**
+ * Check token.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    token               -required
+ * @property    {string}    jwtSecret           -required
+ * @returns     {boolean}
+ */
+exports.tokenIsValid = async (queryParams) => {
+
+    // Check if token is valid
+    return jwt.verify(queryParams.token, queryParams.jwtSecret, async (err, decoded) => {
+        if (!err) return true;
+
+        return false;
+    });
+}
+
+/**
+ * Generate new token.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    jwtSecret           -required
+ * @property    {string}    userId              -required
+ * @property    {string}    expiresIn           -required
+ */
+exports.generateNewToken = async (queryParams) => {
+
+    // Generate token
+    const authentication_token = jwt.sign({ id: queryParams.userId }, queryParams.jwtSecret, { expiresIn: queryParams.expiresIn });
+
+    return authentication_token;
 }
