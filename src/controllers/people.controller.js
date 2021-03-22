@@ -73,12 +73,12 @@ exports.readOneByIdNumber = async (queryParams, connectionParams) => {
         });
 
         // Get person by idNumber
-        const person = await Person.find({
+        const person = await Person.findOne({
             idNumber: queryParams.idNumber
         });
 
         // Check if person was removed
-        if (person._deletedAt) throw new Error('Person removed');
+        if (person && person._deletedAt) throw new Error('Person removed');
 
         // Create person data to return
         const personToFront = {

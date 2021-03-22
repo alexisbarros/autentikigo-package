@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const httpResponse = require('../utils/http-response');
+const fetch = require("node-fetch");
 
 // Controllers
 const userController = require('./users.controller');
@@ -23,6 +24,7 @@ const User = require('../models/users.model');
  * @property    {string}    password            -required
  * @property    {string}    jwtSecret           -required
  * @property    {string}    jwtRefreshSecret    -required
+ * @property    {string}    cpfApiEndpoint      -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -41,31 +43,42 @@ exports.register = async (queryParams, connectionParams) => {
         // Check if person alredy exists
         const person = await personController.readOneByIdNumber(queryParams, connectionParams);
         if (!person.data.idNumber) {
-            // @todo: create person with api cpf/cnpj
+            let personFromApi = await fetch(`${queryParams.cpfApiEndpoint}${queryParams.idNumber}`).then(res => res.json());
 
-            // Mock: start
-            const personToAdd = {
-                idNumber: queryParams.idNumber,
-                country: 'br',
-                fullname: 'Teste',
-                username: 'teste',
-                mothersName: 'Mãe teste',
-                birthDate: new Date('2021-03-02'),
-            };
-            const newPerson = await personController.create(personToAdd, connectionParams);
-            if (newPerson.code !== 200) {
-                throw new Error(newPerson.message);
-            } else {
-                person.data = newPerson.data;
-            }
-            // Mock: end
+            if (personFromApi.status) {
+                let birthdate = personFromApi.nascimento.split('/');
+                birthdate = `${birthdate[1]}/${birthdate[0]}/${birthdate[2]}`;
+                const personToAdd = {
+                    fullname: personFromApi.nome,
+                    idNumber: queryParams.idNumber,
+                    birthDate: new Date(birthdate),
+                    gender: personFromApi.genero,
+                    mothersName: personFromApi.mae,
+                    country: queryParams.country,
+                    username: 'teste'
+                };
 
-        } else {
+                const newPerson = await personController.create(personToAdd, connectionParams);
 
-            // Check if birthDate is correct
-            if (queryParams.birthDate !== person.data.birthDate) {
-                throw new Error('Birth date doesnt correspond to the CPF');
-            }
+                if (newPerson.code !== 200) {
+                    throw new Error(newPerson.message);
+                } else {
+                    person.data = newPerson.data;
+                }
+
+            } else throw Error('CPF API erro.');
+
+        }
+
+        // Check if birthDate is correct
+        let paramsBirthdate = queryParams.birthDate.split('/');
+        paramsBirthdate = new Date(`${paramsBirthdate[1]}/${paramsBirthdate[0]}/${paramsBirthdate[2]}`);
+        if (
+            paramsBirthdate.getDate() !== new Date(person.data.birthDate).getDate() ||
+            paramsBirthdate.getMonth() !== new Date(person.data.birthDate).getMonth() ||
+            paramsBirthdate.getFullYear() !== new Date(person.data.birthDate).getFullYear()
+        ) {
+            throw new Error('Birth date doesnt correspond to the CPF');
         }
 
         // Create a user in db

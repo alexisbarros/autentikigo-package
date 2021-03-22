@@ -1,6 +1,7 @@
 // Modules
 const jwt = require('jsonwebtoken');
 const httpResponse = require('./utils/http-response');
+const checkRequiredParams = require('./utils/check-required-params');
 
 // Controllers
 const authController = require('./controllers/auth.controller');
@@ -20,12 +21,22 @@ const personDTO = require('../src/dto/person-dto');
  * @property    {string}    clientId            -required
  * @property    {string}    jwtSecret           -required
  * @property    {string}    jwtRefreshSecret    -required
+ * @property    {string}    cpfApiEndpoint      -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
 register = async (queryParams, connectionParams) => {
 
     try {
+
+        // Check required params
+        checkRequiredParams.checkParams(
+            ['idNumber', 'birthDate', 'email', 'password', 'clientId', 'jwtSecret', 'jwtRefreshSecret', 'cpfApiEndpoint', 'connectionString'],
+            {
+                ...queryParams,
+                ...connectionParams
+            }
+        );
 
         // Authenticate user
         const user = await authController.register({
@@ -34,7 +45,8 @@ register = async (queryParams, connectionParams) => {
             email: queryParams.email,
             password: queryParams.password,
             jwtSecret: queryParams.jwtSecret,
-            jwtRefreshSecret: queryParams.jwtRefreshSecret
+            jwtRefreshSecret: queryParams.jwtRefreshSecret,
+            cpfApiEndpoint: queryParams.cpfApiEndpoint
         }, {
             connectionString: connectionParams.connectionString
         });
@@ -66,6 +78,15 @@ register = async (queryParams, connectionParams) => {
 login = async (queryParams, connectionParams) => {
 
     try {
+
+        // Check required params
+        checkRequiredParams.checkParams(
+            ['email', 'password', 'clientId', 'jwtSecret', 'jwtRefreshSecret', 'connectionString'],
+            {
+                ...queryParams,
+                ...connectionParams
+            }
+        );
 
         // Authenticate user
         const auth = await authController.login({
@@ -142,6 +163,15 @@ login = async (queryParams, connectionParams) => {
 middleware = async (queryParams, connectionParams) => {
 
     try {
+
+        // Check required params
+        checkRequiredParams.checkParams(
+            ['token', 'refreshToken', 'clientId', 'jwtSecret', 'jwtRefreshSecret', 'userId', 'connectionString'],
+            {
+                ...queryParams,
+                ...connectionParams
+            }
+        );
 
         let dataToReturn = {
             "token": queryParams.token,
