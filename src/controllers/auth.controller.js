@@ -46,6 +46,11 @@ exports.register = async (queryParams, connectionParams) => {
             let personFromApi = await fetch(`${queryParams.cpfApiEndpoint}${queryParams.idNumber}`).then(res => res.json());
 
             if (personFromApi.status) {
+
+                // Create username
+                const username = await personController.createUsername({ fullname: personFromApi.nome }, connectionParams);
+                if (username.code === 400) throw new Error(username.message);
+
                 let birthdate = personFromApi.nascimento.split('/');
                 birthdate = `${birthdate[1]}/${birthdate[0]}/${birthdate[2]}`;
                 const personToAdd = {
@@ -55,7 +60,7 @@ exports.register = async (queryParams, connectionParams) => {
                     gender: personFromApi.genero,
                     mothersName: personFromApi.mae,
                     country: queryParams.country,
-                    username: 'teste'
+                    username: username.data.username
                 };
 
                 const newPerson = await personController.create(personToAdd, connectionParams);

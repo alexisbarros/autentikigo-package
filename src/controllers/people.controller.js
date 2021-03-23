@@ -236,3 +236,48 @@ exports.delete = async (queryParams, connectionParams) => {
     }
 
 };
+
+/**
+ * Create username.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    fullname             -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.createUsername = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        // Create username from full name
+        const arrayOfFullname = queryParams.fullname.split(' ');
+        const usernamePrefix = `${arrayOfFullname[0].toLowerCase()}${arrayOfFullname[arrayOfFullname.length - 1].toLowerCase()}_`;
+
+        // Check if username already exists
+        const peopleWithSameUsername = await Person.find({
+            username: { $regex: "^" + usernamePrefix }
+        });
+
+        // Create username
+        const username = `${usernamePrefix}${peopleWithSameUsername.length}`
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.ok('Username created', { username: username });
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
+
+    }
+
+};
