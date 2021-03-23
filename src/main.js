@@ -2,6 +2,7 @@
 const jwt = require('jsonwebtoken');
 const httpResponse = require('./utils/http-response');
 const checkRequiredParams = require('./utils/check-required-params');
+const checkCPF = require('./utils/check-cpf');
 
 // Controllers
 const authController = require('./controllers/auth.controller');
@@ -37,6 +38,10 @@ register = async (queryParams, connectionParams) => {
                 ...connectionParams
             }
         );
+
+        // Format and check cpf
+        queryParams.idNumber = queryParams.idNumber.replace(/[.-\s]/g, '')
+        if (!checkCPF.checkCPF(queryParams.idNumber)) throw new Error('Invalid CPF');
 
         // Authenticate user
         const user = await authController.register({
