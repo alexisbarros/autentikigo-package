@@ -2,12 +2,16 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const httpResponse = require('../utils/http-response');
+const ObjectId = require('mongoose').Types.ObjectId;
 
 // Model
 const User = require('../models/users.model');
 
 // DTO
 const userDTO = require('../dto/user-dto');
+
+// Controllers
+const personController = require('./people.controller');
 
 /**
  * Register user in db.
@@ -175,6 +179,62 @@ exports.readAll = async (connectionParams) => {
         const users = await User.find({
             _deletedAt: null
         })
+            .populate('personInfo')
+            .populate('authorizedCompanies')
+            .exec();
+
+        // Create user data to return
+        const usersToFront = users.map(user => {
+            return {
+                ...userDTO.getUserDTO(user),
+                _id: user._id,
+            };
+        });
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.ok('Users returned successfully', usersToFront);
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
+
+    }
+
+};
+
+/**
+ * Get all users with specific cpf.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    cpf                 -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.readAllByCpf = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        const person = await personController.readOneByIdNumber({ idNumber: queryParams.cpf.replace(/[.-\s]/g, '') }, connectionParams);
+        if (!person.data) throw new Error('User not found');
+
+        // Get all users
+        const users = await User
+            .find({
+                $and: [
+                    { personInfo: new ObjectId(person.data._id) },
+                    { _deletedAt: null }
+                ]
+            })
             .populate('personInfo')
             .populate('authorizedCompanies')
             .exec();

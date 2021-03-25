@@ -75,7 +75,7 @@ register = async (queryParams, connectionParams) => {
  * @property    {string}    jwtSecret           -required
  * @property    {string}    jwtRefreshSecret    -required
  * @property    {string}    clientId            -required
- * @param       {string}    email               -required
+ * @param       {string}    user                -required
  * @param       {string}    password            -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
@@ -86,7 +86,7 @@ login = async (queryParams, connectionParams) => {
 
         // Check required params
         checkRequiredParams.checkParams(
-            ['email', 'password', 'clientId', 'jwtSecret', 'jwtRefreshSecret', 'connectionString'],
+            ['user', 'password', 'clientId', 'jwtSecret', 'jwtRefreshSecret', 'connectionString'],
             {
                 ...queryParams,
                 ...connectionParams
@@ -95,7 +95,7 @@ login = async (queryParams, connectionParams) => {
 
         // Authenticate user
         const auth = await authController.login({
-            email: queryParams.email,
+            user: queryParams.user,
             password: queryParams.password,
             jwtSecret: queryParams.jwtSecret,
             jwtRefreshSecret: queryParams.jwtRefreshSecret,

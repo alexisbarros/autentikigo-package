@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const httpResponse = require('../utils/http-response');
 const fetch = require("node-fetch");
+const checkUser = require('../utils/check-user-type');
 
 // Controllers
 const userController = require('./users.controller');
@@ -34,7 +35,6 @@ exports.register = async (queryParams, connectionParams) => {
 
         // Check if email alredy exists
         const users = await userController.readOneByEmail({ email: queryParams.email }, connectionParams);
-        // const users = await userController.readAll(connectionParams);
         if (users.data.email) throw new Error('The email has already been registered');
 
 
@@ -118,7 +118,7 @@ exports.register = async (queryParams, connectionParams) => {
 /**
  * Login user.
  * @param       {object}    queryParams         -required
- * @property    {string}    email               -required
+ * @property    {string}    user                -required
  * @property    {string}    password            -required
  * @property    {string}    jwtSecret           -required
  * @property    {string}    jwtRefreshSecret    -required
@@ -135,9 +135,30 @@ exports.login = async (queryParams, connectionParams) => {
             useUnifiedTopology: true
         });
 
+        // Check user type
+        let user;
+        const userType = await checkUser.checkUserType(queryParams.user);
+
+        switch (userType) {
+            case 'email':
+                user = await userController.readOneByEmail({ email: queryParams.user }, connectionParams);
+                break
+
+            case 'cpf':
+                const users = await userController.readAllByCpf({ cpf: queryParams.user }, connectionParams);
+                console.log(users);
+                break
+
+            case 'username':
+                break
+
+            default:
+                break
+        }
+        if (!user.data.email) throw new Error('User not found');
         // Search user
-        const user = await User.findOne({ email: queryParams.email });
-        if (!user) throw new Error('User not found');
+        // const user = await User.findOne({ email: queryParams.email });
+        // if (!user) throw new Error('User not found');
 
         // Check pass
         const isChecked = await bcrypt.compare(queryParams.password, user.password);
