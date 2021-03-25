@@ -33,11 +33,9 @@ exports.register = async (queryParams, connectionParams) => {
     try {
 
         // Check if email alredy exists
-        const users = await userController.readAll(connectionParams);
-        if (
-            users.data &&
-            users.data.filter(user => user.email === queryParams.email).length
-        ) throw new Error('The email has already been registered');
+        const users = await userController.readOneByEmail({ email: queryParams.email }, connectionParams);
+        // const users = await userController.readAll(connectionParams);
+        if (users.data.email) throw new Error('The email has already been registered');
 
 
         // Check if person alredy exists

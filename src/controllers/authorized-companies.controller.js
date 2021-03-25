@@ -76,10 +76,7 @@ exports.readOneById = async (queryParams, connectionParams) => {
         });
 
         // Get authorizedCompany by id
-        const authorizedCompany = await AuthorizedCompany.findById(queryParams.id);
-
-        // Check if authorizedCompany was removed
-        if (authorizedCompany._deletedAt) throw new Error('Authorized Company removed');
+        const authorizedCompany = await AuthorizedCompany.findById(queryParams.id).and([{ _deletedAt: null }]);
 
         // Create authorizedCompany data to return
         const authorizedCompanyToFront = {
@@ -119,13 +116,10 @@ exports.readAll = async (connectionParams) => {
         });
 
         // Get all authorizedCompanies
-        const authorizedCompanies = await AuthorizedCompany.find({});
-
-        // Filter authorizedCompany tha wasnt removed
-        let authorizedCompaniesToFront = authorizedCompanies.filter(authorizedCompany => !authorizedCompany._deletedAt);
+        const authorizedCompanies = await AuthorizedCompany.find({ _deletedAt: null });
 
         // Create authorizedCompany data to return
-        authorizedCompaniesToFront = authorizedCompaniesToFront.map(authorizedCompany => {
+        const authorizedCompaniesToFront = authorizedCompanies.map(authorizedCompany => {
             return {
                 ...authorizedCompanyDTO.getAuthorizedCompanyDTO(authorizedCompany),
                 _id: authorizedCompany._id,

@@ -74,11 +74,11 @@ exports.readOneByIdNumber = async (queryParams, connectionParams) => {
 
         // Get person by idNumber
         const person = await Person.findOne({
-            idNumber: queryParams.idNumber
+            $and: [
+                { idNumber: queryParams.idNumber },
+                { _deletedAt: null }
+            ]
         });
-
-        // Check if person was removed
-        if (person && person._deletedAt) throw new Error('Person removed');
 
         // Create person data to return
         const personToFront = {
@@ -118,13 +118,12 @@ exports.readAll = async (connectionParams) => {
         });
 
         // Get all people
-        const people = await Person.find({});
-
-        // Filter person tha wasnt removed
-        let peopleToFront = people.filter(person => !person._deletedAt);
+        const people = await Person.find({
+            _deletedAt: null
+        });
 
         // Create person data to return
-        peopleToFront = peopleToFront.map(person => {
+        const peopleToFront = people.map(person => {
             return {
                 ...personDTO.getPersonDTO(person),
                 _id: person._id,

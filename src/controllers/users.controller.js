@@ -109,6 +109,54 @@ exports.readOneByIdNumber = async (queryParams, connectionParams) => {
 }
 
 /**
+ * Get one user by emal.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    email               -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.readOneByEmail = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        // Get user by idNumber
+        const user = await User.findOne().and([
+            { _deletedAt: null },
+            { email: queryParams.email },
+        ])
+            .populate('personInfo')
+            .populate('authorizedCompanies')
+            .exec();
+
+        // Create user data to return
+        const userToFront = {
+            ...userDTO.getUserDTO(user),
+            _id: user._id,
+        };
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.ok('User returned successfully', userToFront);
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
+
+    }
+
+}
+
+/**
  * Get all users.
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
@@ -124,16 +172,15 @@ exports.readAll = async (connectionParams) => {
         });
 
         // Get all users
-        const users = await User.find({})
+        const users = await User.find({
+            _deletedAt: null
+        })
             .populate('personInfo')
             .populate('authorizedCompanies')
             .exec();
 
-        // Filter user tha wasnt removed
-        let usersToFront = users.filter(user => !user._deletedAt);
-
         // Create user data to return
-        usersToFront = usersToFront.map(user => {
+        const usersToFront = users.map(user => {
             return {
                 ...userDTO.getUserDTO(user),
                 _id: user._id,
