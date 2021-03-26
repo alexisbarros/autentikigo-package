@@ -218,14 +218,14 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
 
     try {
 
+        const person = await personController.readOneByIdNumber({ idNumber: queryParams.cpf.replace(/[.-\s]/g, '') }, connectionParams);
+        if (!person.data) throw new Error('User not found');
+
         // Connect to database
         await mongoose.connect(connectionParams.connectionString, {
             useNewUrlParser: true,
             useUnifiedTopology: true
         });
-
-        const person = await personController.readOneByIdNumber({ idNumber: queryParams.cpf.replace(/[.-\s]/g, '') }, connectionParams);
-        if (!person.data) throw new Error('User not found');
 
         // Get all users
         const users = await User

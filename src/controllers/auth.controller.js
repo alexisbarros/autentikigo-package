@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const httpResponse = require('../utils/http-response');
 const fetch = require("node-fetch");
 const checkUser = require('../utils/check-user-type');
+const ObjectId = require('mongoose').Types.ObjectId;
 
 // Controllers
 const userController = require('./users.controller');
@@ -141,12 +142,37 @@ exports.login = async (queryParams, connectionParams) => {
 
         switch (userType) {
             case 'email':
-                user = await userController.readOneByEmail({ email: queryParams.user }, connectionParams);
+                const userToCheck = await userController.readOneByEmail({ email: queryParams.user }, connectionParams);
+                if (!userToCheck.data.email) throw new Error('User not found');
+                // Check pass
+                const isChecked = await this.verifyPassword(
+                    {
+                        userId: userToCheck.data._id,
+                        password: queryParams.password
+                    },
+                    connectionParams
+                );
+                if (!isChecked) throw new Error('Incorrect password');
+                user = userToCheck.data;
                 break
 
             case 'cpf':
                 const users = await userController.readAllByCpf({ cpf: queryParams.user }, connectionParams);
-                console.log(users);
+                for (const el of users.data) {
+                    // users.data.forEach(async el => {
+
+                    const isChecked = await this.verifyPassword(
+                        {
+                            userId: el._id,
+                            password: queryParams.password
+                        },
+                        connectionParams
+                    );
+
+                    // Check pass
+                    if (isChecked) user = el;
+                }
+                if (!user) throw new Error('Incorrect password');
                 break
 
             case 'username':
@@ -155,15 +181,6 @@ exports.login = async (queryParams, connectionParams) => {
             default:
                 break
         }
-        if (!user.data.email) throw new Error('User not found');
-        // Search user
-        // const user = await User.findOne({ email: queryParams.email });
-        // if (!user) throw new Error('User not found');
-
-        // Check pass
-        const isChecked = await bcrypt.compare(queryParams.password, user.password);
-
-        if (!isChecked) throw new Error('Incorrect password');
 
         // Generate token
         const authentication_token = jwt.sign({ id: user._id }, queryParams.jwtSecret, { expiresIn: '10m' });
@@ -223,4 +240,49 @@ exports.generateNewToken = async (queryParams) => {
     const authentication_token = jwt.sign({ id: queryParams.userId }, queryParams.jwtSecret, { expiresIn: queryParams.expiresIn });
 
     return authentication_token;
+}
+
+/**
+ * Verify password of a user.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    userId              -required
+ * @property    {string}    password            -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.verifyPassword = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        const user = await User.findOne({
+            $and: [
+                { _id: new ObjectId(queryParams.userId) },
+                { _deletedAt: null },
+            ]
+        });
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        if (!user) return false;
+
+        const isChecked = await bcrypt.compare(queryParams.password, user.password);
+        if (!isChecked) return false;
+
+        return true
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return false;
+
+    }
 }
