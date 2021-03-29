@@ -264,6 +264,62 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
 };
 
 /**
+ * Get all users with specific username.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    username            -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.readAllByUsername = async (queryParams, connectionParams) => {
+
+    try {
+
+        const person = await personController.readOneByUsername({ username: queryParams.username }, connectionParams);
+        if (!person.data) throw new Error('User not found');
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        // Get all users
+        const users = await User
+            .find({
+                $and: [
+                    { personInfo: new ObjectId(person.data._id) },
+                    { _deletedAt: null }
+                ]
+            })
+            .populate('personInfo')
+            .populate('authorizedCompanies')
+            .exec();
+
+        // Create user data to return
+        const usersToFront = users.map(user => {
+            return {
+                ...userDTO.getUserDTO(user),
+                _id: user._id,
+            };
+        });
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.ok('Users returned successfully', usersToFront);
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
+
+    }
+
+};
+
+/**
  * Update a user.
  * @param       {object}    queryParams         -required
  * @property    {string}    _id                  -required

@@ -103,6 +103,53 @@ exports.readOneByIdNumber = async (queryParams, connectionParams) => {
 }
 
 /**
+ * Get one person by username.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    username            -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.readOneByUsername = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        // Get person by username
+        const person = await Person.findOne({
+            $and: [
+                { username: queryParams.username },
+                { _deletedAt: null }
+            ]
+        });
+
+        // Create person data to return
+        const personToFront = {
+            ...personDTO.getPersonDTO(person),
+            _id: person._id,
+        };
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.ok('Person returned successfully', personToFront);
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
+
+    }
+
+}
+
+/**
  * Get all people.
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required

@@ -140,6 +140,7 @@ exports.login = async (queryParams, connectionParams) => {
         let user;
         const userType = await checkUser.checkUserType(queryParams.user);
 
+        let users;
         switch (userType) {
             case 'email':
                 const userToCheck = await userController.readOneByEmail({ email: queryParams.user }, connectionParams);
@@ -157,9 +158,8 @@ exports.login = async (queryParams, connectionParams) => {
                 break
 
             case 'cpf':
-                const users = await userController.readAllByCpf({ cpf: queryParams.user }, connectionParams);
+                users = await userController.readAllByCpf({ cpf: queryParams.user }, connectionParams);
                 for (const el of users.data) {
-                    // users.data.forEach(async el => {
 
                     const isChecked = await this.verifyPassword(
                         {
@@ -176,6 +176,21 @@ exports.login = async (queryParams, connectionParams) => {
                 break
 
             case 'username':
+                users = await userController.readAllByUsername({ username: queryParams.user }, connectionParams);
+                for (const el of users.data) {
+
+                    const isChecked = await this.verifyPassword(
+                        {
+                            userId: el._id,
+                            password: queryParams.password
+                        },
+                        connectionParams
+                    );
+
+                    // Check pass
+                    if (isChecked) user = el;
+                }
+                if (!user) throw new Error('Incorrect password');
                 break
 
             default:
