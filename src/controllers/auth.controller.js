@@ -258,6 +258,21 @@ exports.generateNewToken = async (queryParams) => {
 }
 
 /**
+ * Get payload of a token.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    token               -required
+ * @property    {string}    jwtSecret           -required
+ */
+exports.getTokenPayload = async (queryParams) => {
+
+    // Get token payload
+    const payload = jwt.verify(queryParams.token, queryParams.jwtSecret);
+
+    return payload;
+
+}
+
+/**
  * Verify password of a user.
  * @param       {object}    queryParams         -required
  * @property    {string}    userId              -required

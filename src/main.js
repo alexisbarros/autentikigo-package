@@ -251,6 +251,107 @@ middleware = async (queryParams, connectionParams) => {
 }
 
 /**
+ * Generate token to recover password.
+ * @param       {object}    queryParams         -required
+ * @param       {string}    email               -required
+ * @property    {string}    jwtSecret           -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+generateRecoveryPasswordToken = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Check required params
+        checkRequiredParams.checkParams(
+            ['email', 'jwtSecret', 'connectionString'],
+            {
+                ...queryParams,
+                ...connectionParams
+            }
+        );
+
+        // Get user
+        const user = await userController.readOneByEmail({
+            email: queryParams.email
+        }, {
+            connectionString: connectionParams.connectionString
+        });
+
+        if (!user.data.email) throw new Error('User not found');
+
+        // Generate recovery password token
+        const recoveryPasswordToken = await authController.generateNewToken({
+            jwtSecret: queryParams.jwtSecret,
+            userId: user.data._id,
+            expiresIn: '10m',
+        });
+
+        return httpResponse.ok('password recovery token successfully generated', { recoveryPasswordToken });
+
+    } catch (e) {
+
+        return httpResponse.error(e.message, {});
+
+    }
+}
+
+/**
+ * Change password.
+ * @param       {object}    queryParams             -required
+ * @param       {string}    password                -required
+ * @param       {string}    recoveryPasswordToken   -required
+ * @property    {string}    jwtSecret               -required
+ * @param       {object}    connectionParams        -required
+ * @property    {string}    connectionString        -required
+ */
+changePassword = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Check required params
+        checkRequiredParams.checkParams(
+            ['password', 'recoveryPasswordToken', 'jwtSecret', 'connectionString'],
+            {
+                ...queryParams,
+                ...connectionParams
+            }
+        );
+
+        // Check token
+        const checkToken = await authController.tokenIsValid({
+            token: queryParams.recoveryPasswordToken,
+            jwtSecret: queryParams.jwtSecret
+        });
+        if (!checkToken) throw new Error('Invalid token');
+
+        // Get user id in payload
+        const payload = await authController.getTokenPayload({
+            token: queryParams.recoveryPasswordToken,
+            jwtSecret: queryParams.jwtSecret
+        });
+
+        // Change user password
+        const user = await userController.updatePassword({
+            userId: payload.id,
+            password: queryParams.password
+        }, {
+            connectionString: connectionParams.connectionString
+        });
+        console.log(user);
+        if (user.code !== 200) throw new Error(user.message);
+
+        return httpResponse.ok('Password update successfuly', {});
+
+    } catch (e) {
+
+        return httpResponse.error(e.message, {});
+
+    }
+
+}
+
+/**
  * Authorize company of a logged user
  * @param       {object}    queryParams             -required
  * @property    {string}    jwtSecret               -required
@@ -370,6 +471,8 @@ module.exports = {
     register,
     login,
     middleware,
+    generateRecoveryPasswordToken,
+    changePassword,
     authorizeCompany,
     getUserInfo,
 }

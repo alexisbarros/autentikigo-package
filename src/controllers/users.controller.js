@@ -372,6 +372,48 @@ exports.update = async (queryParams, connectionParams) => {
 };
 
 /**
+ * Update user password.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    userId              -required
+ * @property    {string}    password            -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.updatePassword = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        // Encrypt pass
+        const hashedPassword = await bcrypt.hash(queryParams.password, 10);
+
+        // Update user in database
+        const user = await User.findByIdAndUpdate(queryParams.userId, { password: hashedPassword });
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        if (!user) throw new Error('Password not updated');
+
+        return httpResponse.ok('User password updated successfuly', {});
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
+
+    }
+
+};
+
+/**
  * Delete a user.
  * @param       {object}    queryParams         -required
  * @property    {string}    id                  -required
