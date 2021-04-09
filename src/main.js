@@ -59,7 +59,10 @@ register = async (queryParams, connectionParams) => {
         if (user.code !== 200) throw new Error(user.message);
 
         // Authorize client
-        return login(queryParams, connectionParams);
+        return login({
+            ...queryParams,
+            user: queryParams.idNumber,
+        }, connectionParams);
 
     } catch (e) {
 
