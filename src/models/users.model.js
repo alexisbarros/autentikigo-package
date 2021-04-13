@@ -3,6 +3,21 @@ const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
+let authorizedCompany = new Schema({
+
+    clientId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'AuthorizedCompany'
+    },
+
+    role: {
+        type: String,
+        required: false,
+        default: 'user'
+    }
+
+});
+
 // Schema
 let UserSchema = new Schema({
 
@@ -33,10 +48,7 @@ let UserSchema = new Schema({
     },
 
     authorizedCompanies: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'AuthorizedCompany'
-        }
+        authorizedCompany
     ],
 
     _createdAt: {

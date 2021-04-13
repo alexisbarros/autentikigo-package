@@ -97,13 +97,13 @@ exports.register = async (queryParams, connectionParams) => {
         if (user.code === 400) throw new Error(user.message);
 
         // Generate token
-        const authentication_token = jwt.sign({ id: user.data._id }, queryParams.jwtSecret, { expiresIn: '10m' });
-        const authentication_refresh_token = jwt.sign({ id: user.data._id }, queryParams.jwtRefreshSecret, { expiresIn: '7d' });
+        // const authentication_token = jwt.sign({ id: user.data._id }, queryParams.jwtSecret, { expiresIn: '10m' });
+        // const authentication_refresh_token = jwt.sign({ id: user.data._id }, queryParams.jwtRefreshSecret, { expiresIn: '7d' });
 
         // Create user to send to front
         const dataToFront = {
-            authentication_token: authentication_token,
-            authentication_refresh_token: authentication_refresh_token
+            // authentication_token: authentication_token,
+            // authentication_refresh_token: authentication_refresh_token
         };
 
         return httpResponse.ok('User successfully registered', dataToFront);
@@ -198,15 +198,15 @@ exports.login = async (queryParams, connectionParams) => {
         }
 
         // Generate token
-        const authentication_token = jwt.sign({ id: user._id }, queryParams.jwtSecret, { expiresIn: '10m' });
-        const authentication_refresh_token = jwt.sign({ id: user._id }, queryParams.jwtRefreshSecret, { expiresIn: '7d' });
+        // const authentication_token = jwt.sign({ id: user._id }, queryParams.jwtSecret, { expiresIn: '10m' });
+        // const authentication_refresh_token = jwt.sign({ id: user._id }, queryParams.jwtRefreshSecret, { expiresIn: '7d' });
 
         // Create user data to return
         const userToFront = {
             _id: user._id,
             email: user.email,
-            authentication_token: authentication_token,
-            authentication_refresh_token: authentication_refresh_token,
+            // authentication_token: authentication_token,
+            // authentication_refresh_token: authentication_refresh_token,
         };
 
         // Disconnect to database
@@ -247,12 +247,13 @@ exports.tokenIsValid = async (queryParams) => {
  * @param       {object}    queryParams         -required
  * @property    {string}    jwtSecret           -required
  * @property    {string}    userId              -required
+ * @property    {string}    role                -required
  * @property    {string}    expiresIn           -required
  */
 exports.generateNewToken = async (queryParams) => {
 
     // Generate token
-    const authentication_token = jwt.sign({ id: queryParams.userId }, queryParams.jwtSecret, { expiresIn: queryParams.expiresIn });
+    const authentication_token = jwt.sign({ id: queryParams.userId, role: queryParams.role }, queryParams.jwtSecret, { expiresIn: queryParams.expiresIn });
 
     return authentication_token;
 }

@@ -84,7 +84,12 @@ exports.readOneByUniqueId = async (queryParams, connectionParams) => {
         // Get user by uniqueId
         const user = await User.findById(queryParams.id)
             .populate('personInfo')
-            .populate('authorizedCompanies')
+            .populate({
+                path: 'authorizedCompanies',
+                populate: {
+                    path: 'clientId'
+                }
+            })
             .exec();
 
         // Check if user was removed
@@ -135,7 +140,12 @@ exports.readOneByEmail = async (queryParams, connectionParams) => {
             { email: queryParams.email },
         ])
             .populate('personInfo')
-            .populate('authorizedCompanies')
+            .populate({
+                path: 'authorizedCompanies',
+                populate: {
+                    path: 'clientId'
+                }
+            })
             .exec();
 
         // Create user data to return
@@ -180,7 +190,12 @@ exports.readAll = async (connectionParams) => {
             _deletedAt: null
         })
             .populate('personInfo')
-            .populate('authorizedCompanies')
+            .populate({
+                path: 'authorizedCompanies',
+                populate: {
+                    path: 'clientId'
+                }
+            })
             .exec();
 
         // Create user data to return
@@ -236,7 +251,12 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
                 ]
             })
             .populate('personInfo')
-            .populate('authorizedCompanies')
+            .populate({
+                path: 'authorizedCompanies',
+                populate: {
+                    path: 'clientId'
+                }
+            })
             .exec();
 
         // Create user data to return
@@ -292,7 +312,12 @@ exports.readAllByUsername = async (queryParams, connectionParams) => {
                 ]
             })
             .populate('personInfo')
-            .populate('authorizedCompanies')
+            .populate({
+                path: 'authorizedCompanies',
+                populate: {
+                    path: 'clientId'
+                }
+            })
             .exec();
 
         // Create user data to return

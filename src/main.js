@@ -16,9 +16,10 @@ const personDTO = require('../src/dto/person-dto');
  * Register user and authorize company
  * @param       {object}    queryParams         -required
  * @property    {string}    uniqueId            -required
- * @property    {date}      birthday           -required
+ * @property    {date}      birthday            -required
  * @property    {string}    email               -required
  * @property    {string}    password            -required
+ * @property    {string}    role                
  * @property    {string}    clientId            -required
  * @property    {string}    jwtSecret           -required
  * @property    {string}    jwtRefreshSecret    -required
@@ -80,6 +81,7 @@ register = async (queryParams, connectionParams) => {
  * @property    {string}    clientId            -required
  * @param       {string}    user                -required
  * @param       {string}    password            -required
+ * @param       {string}    role           
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -117,7 +119,12 @@ login = async (queryParams, connectionParams) => {
 
         // Transform user info and authorized companies in array of objectId
         user.data.personInfo = user.data.personInfo._id;
-        user.data.authorizedCompanies = (user.data.authorizedCompanies || []).map(el => el._id);
+        user.data.authorizedCompanies = user.data.authorizedCompanies.map(el => {
+            return {
+                'role': el.role,
+                'clientId': el.clientId._id.toString(),
+            }
+        });
 
         // Authorize client
         const authorizedCompany = await authorizedCompanyController.readOneById({
@@ -132,17 +139,42 @@ login = async (queryParams, connectionParams) => {
 
         // Check if company has already authorized
         const authorizedCompanies = (userToUpdate['authorizedCompanies'] || []);
-        if (!authorizedCompanies.includes(authorizedCompany.data._id))
-            userToUpdate['authorizedCompanies'] = [...authorizedCompanies, authorizedCompany.data._id];
+        if (!authorizedCompanies.some(authorizedCompanyByUser => authorizedCompanyByUser.clientId === authorizedCompany.data._id.toString())) {
+            userToUpdate['authorizedCompanies'] = [
+                ...authorizedCompanies,
+                {
+                    clientId: authorizedCompany.data._id,
+                    role: queryParams.role,
+                }
+            ];
+        }
 
         const userUpdated = await userController.update(
             userToUpdate, { connectionString: connectionParams.connectionString },
         );
 
         if (userUpdated.code === 200) {
+
+            // Get role
+            const role = userToUpdate['authorizedCompanies'].find(authorizedCompanyByUser => authorizedCompanyByUser.clientId === authorizedCompany.data._id.toString())['role'];
+
+            const authentication_token = await authController.generateNewToken({
+                jwtSecret: queryParams.jwtSecret,
+                userId: userUpdated.data._id,
+                role: role,
+                expiresIn: '10m'
+            });
+
+            const authentication_refresh_token = await authController.generateNewToken({
+                jwtSecret: queryParams.jwtRefreshSecret,
+                userId: userUpdated.data._id,
+                role: role,
+                expiresIn: '7d'
+            });
+
             const dataToReturn = {
-                "token": auth.data.authentication_token,
-                "refreshToken": auth.data.authentication_refresh_token,
+                "token": authentication_token,
+                "refreshToken": authentication_refresh_token,
                 "redirectUri": authorizedCompany.data.redirectUri
             }
 
@@ -341,7 +373,7 @@ changePassword = async (queryParams, connectionParams) => {
         }, {
             connectionString: connectionParams.connectionString
         });
-        console.log(user);
+
         if (user.code !== 200) throw new Error(user.message);
 
         return httpResponse.ok('Password update successfuly', {});
