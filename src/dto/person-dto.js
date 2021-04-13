@@ -1,10 +1,11 @@
 exports.getPersonDTO = (data) => {
     return {
-        idNumber: data.idNumber,
+        uniqueId: data.uniqueId,
         country: data.country,
-        fullname: data.fullname,
+        name: data.name,
         username: data.username,
-        mothersName: data.mothersName,
-        birthDate: data.birthDate,
+        mother: data.mother,
+        birthday: data.birthday,
+        gender: data.gender,
     }
 };

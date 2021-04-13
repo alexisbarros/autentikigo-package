@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 
 let PersonSchema = new Schema({
 
-    idNumber: {
+    uniqueId: {
         type: String,
         required: true,
     },
@@ -15,7 +15,7 @@ let PersonSchema = new Schema({
         default: 'br',
     },
 
-    fullname: {
+    name: {
         type: String,
         required: true,
     },
@@ -25,31 +25,36 @@ let PersonSchema = new Schema({
         required: true,
     },
 
-    mothersName: {
+    mother: {
         type: String,
         required: true,
     },
 
-    birthDate: {
+    gender: {
+        type: String,
+        required: true,
+    },
+
+    birthday: {
         type: Date,
         required: true,
     },
-    
-    _createdAt: { 
+
+    _createdAt: {
         type: Date,
         required: true,
         default: () => {
-            if(!this._createdAt) {            
+            if (!this._createdAt) {
                 return Date.now();
             }
         },
     },
 
-    _updatedAt: { 
+    _updatedAt: {
         type: Date,
         required: true,
         default: () => {
-            if(!this._updatedAt) {            
+            if (!this._updatedAt) {
                 return Date.now();
             }
         },

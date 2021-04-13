@@ -20,8 +20,8 @@ const User = require('../models/users.model');
 /**
  * Register a user in db.
  * @param       {object}    queryParams         -required
- * @property    {string}    idNumber            -required
- * @property    {date}      birthDate           -required
+ * @property    {string}    uniqueId            -required
+ * @property    {date}      birthday           -required
  * @property    {string}    email               -required
  * @property    {string}    password            -required
  * @property    {string}    jwtSecret           -required
@@ -40,24 +40,24 @@ exports.register = async (queryParams, connectionParams) => {
 
 
         // Check if person alredy exists
-        const person = await personController.readOneByIdNumber(queryParams, connectionParams);
-        if (!person.data.idNumber) {
-            let personFromApi = await fetch(`${queryParams.cpfApiEndpoint}${queryParams.idNumber}`).then(res => res.json());
+        const person = await personController.readOneByUniqueId(queryParams, connectionParams);
+        if (!person.data.uniqueId) {
+            let personFromApi = await fetch(`${queryParams.cpfApiEndpoint}${queryParams.uniqueId}`).then(res => res.json());
 
             if (personFromApi.status) {
 
                 // Create username
-                const username = await personController.createUsername({ fullname: personFromApi.nome }, connectionParams);
+                const username = await personController.createUsername({ name: personFromApi.nome }, connectionParams);
                 if (username.code === 400) throw new Error(username.message);
 
-                let birthdate = personFromApi.nascimento.split('/');
-                birthdate = `${birthdate[1]}/${birthdate[0]}/${birthdate[2]}`;
+                let birthday = personFromApi.nascimento.split('/');
+                birthday = `${birthday[1]}/${birthday[0]}/${birthday[2]}`;
                 const personToAdd = {
-                    fullname: personFromApi.nome,
-                    idNumber: queryParams.idNumber,
-                    birthDate: new Date(birthdate),
+                    name: personFromApi.nome,
+                    uniqueId: queryParams.uniqueId,
+                    birthday: new Date(birthday),
                     gender: personFromApi.genero,
-                    mothersName: personFromApi.mae,
+                    mother: personFromApi.mae,
                     country: queryParams.country,
                     username: username.data.username
                 };
@@ -74,13 +74,13 @@ exports.register = async (queryParams, connectionParams) => {
 
         }
 
-        // Check if birthDate is correct
-        let paramsBirthdate = queryParams.birthDate.split('/');
-        paramsBirthdate = new Date(`${paramsBirthdate[1]}/${paramsBirthdate[0]}/${paramsBirthdate[2]}`);
+        // Check if birthday is correct
+        let paramsBirthday = queryParams.birthday.split('/');
+        paramsBirthday = new Date(`${paramsBirthday[1]}/${paramsBirthday[0]}/${paramsBirthday[2]}`);
         if (
-            paramsBirthdate.getDate() !== new Date(person.data.birthDate).getDate() ||
-            paramsBirthdate.getMonth() !== new Date(person.data.birthDate).getMonth() ||
-            paramsBirthdate.getFullYear() !== new Date(person.data.birthDate).getFullYear()
+            paramsBirthday.getDate() !== new Date(person.data.birthday).getDate() ||
+            paramsBirthday.getMonth() !== new Date(person.data.birthday).getMonth() ||
+            paramsBirthday.getFullYear() !== new Date(person.data.birthday).getFullYear()
         ) {
             throw new Error('Birth date doesnt correspond to the CPF');
         }

@@ -71,7 +71,7 @@ exports.create = async (queryParams, connectionParams) => {
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
-exports.readOneByIdNumber = async (queryParams, connectionParams) => {
+exports.readOneByUniqueId = async (queryParams, connectionParams) => {
 
     try {
 
@@ -81,7 +81,7 @@ exports.readOneByIdNumber = async (queryParams, connectionParams) => {
             useUnifiedTopology: true
         });
 
-        // Get user by idNumber
+        // Get user by uniqueId
         const user = await User.findById(queryParams.id)
             .populate('personInfo')
             .populate('authorizedCompanies')
@@ -129,7 +129,7 @@ exports.readOneByEmail = async (queryParams, connectionParams) => {
             useUnifiedTopology: true
         });
 
-        // Get user by idNumber
+        // Get user by uniqueId
         const user = await User.findOne().and([
             { _deletedAt: null },
             { email: queryParams.email },
@@ -218,7 +218,7 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
 
     try {
 
-        const person = await personController.readOneByIdNumber({ idNumber: queryParams.cpf.replace(/[.-\s]/g, '') }, connectionParams);
+        const person = await personController.readOneByUniqueId({ uniqueId: queryParams.cpf.replace(/[.-\s]/g, '') }, connectionParams);
         if (!person.data) throw new Error('User not found');
 
         // Connect to database

@@ -11,12 +11,12 @@ const personDTO = require('../dto/person-dto');
 /**
  * Register person in db.
  * @param       {object}    queryParams         -required
- * @property    {string}    idNumber            -required
+ * @property    {string}    uniqueId            -required
  * @property    {string}    country             -required
- * @property    {string}    fullname            -required
+ * @property    {string}    name                -required
  * @property    {string}    username            -required
- * @property    {string}    mothersName         -required
- * @property    {date}      birthDate           -required
+ * @property    {string}    mother              -required
+ * @property    {date}      birthday            -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -56,13 +56,13 @@ exports.create = async (queryParams, connectionParams) => {
 };
 
 /**
- * Get one person by idNumber.
+ * Get one person by uniqueId.
  * @param       {object}    queryParams         -required
- * @property    {string}    idNumber            -required
+ * @property    {string}    uniqueId            -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
-exports.readOneByIdNumber = async (queryParams, connectionParams) => {
+exports.readOneByUniqueId = async (queryParams, connectionParams) => {
 
     try {
 
@@ -72,10 +72,10 @@ exports.readOneByIdNumber = async (queryParams, connectionParams) => {
             useUnifiedTopology: true
         });
 
-        // Get person by idNumber
+        // Get person by uniqueId
         const person = await Person.findOne({
             $and: [
-                { idNumber: queryParams.idNumber },
+                { uniqueId: queryParams.uniqueId },
                 { _deletedAt: null }
             ]
         });
@@ -197,12 +197,12 @@ exports.readAll = async (connectionParams) => {
  * Update a person.
  * @param       {object}    queryParams         -required
  * @property    {string}    _id                  -required
- * @property    {string}    idNumber            -required
+ * @property    {string}    uniqueId            -required
  * @property    {string}    country             -required
- * @property    {string}    fullname            -required
+ * @property    {string}    name            -required
  * @property    {string}    username            -required
- * @property    {string}    mothersName         -required
- * @property    {date}      birthDate           -required
+ * @property    {string}    mother         -required
+ * @property    {date}      birthday           -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -286,7 +286,7 @@ exports.delete = async (queryParams, connectionParams) => {
 /**
  * Create username.
  * @param       {object}    queryParams         -required
- * @property    {string}    fullname             -required
+ * @property    {string}    name             -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -301,8 +301,8 @@ exports.createUsername = async (queryParams, connectionParams) => {
         });
 
         // Create username from full name
-        const arrayOfFullname = queryParams.fullname.split(' ');
-        const usernamePrefix = `${arrayOfFullname[0].toLowerCase()}${arrayOfFullname[arrayOfFullname.length - 1].toLowerCase()}_`;
+        const arrayOfName = queryParams.name.split(' ');
+        const usernamePrefix = `${arrayOfName[0].toLowerCase()}${arrayOfName[arrayOfName.length - 1].toLowerCase()}_`;
 
         // Check if username already exists
         const peopleWithSameUsername = await Person.find({

@@ -15,8 +15,8 @@ const personDTO = require('../src/dto/person-dto');
 /**
  * Register user and authorize company
  * @param       {object}    queryParams         -required
- * @property    {string}    idNumber            -required
- * @property    {date}      birthDate           -required
+ * @property    {string}    uniqueId            -required
+ * @property    {date}      birthday           -required
  * @property    {string}    email               -required
  * @property    {string}    password            -required
  * @property    {string}    clientId            -required
@@ -32,7 +32,7 @@ register = async (queryParams, connectionParams) => {
 
         // Check required params
         checkRequiredParams.checkParams(
-            ['idNumber', 'birthDate', 'email', 'password', 'clientId', 'jwtSecret', 'jwtRefreshSecret', 'cpfApiEndpoint', 'connectionString'],
+            ['uniqueId', 'birthday', 'email', 'password', 'clientId', 'jwtSecret', 'jwtRefreshSecret', 'cpfApiEndpoint', 'connectionString'],
             {
                 ...queryParams,
                 ...connectionParams
@@ -40,13 +40,13 @@ register = async (queryParams, connectionParams) => {
         );
 
         // Format and check cpf
-        queryParams.idNumber = queryParams.idNumber.replace(/[.-\s]/g, '')
-        if (!checkCPF.checkCPF(queryParams.idNumber)) throw new Error('Invalid CPF');
+        queryParams.uniqueId = queryParams.uniqueId.replace(/[.-\s]/g, '')
+        if (!checkCPF.checkCPF(queryParams.uniqueId)) throw new Error('Invalid CPF');
 
         // Authenticate user
         const user = await authController.register({
-            idNumber: queryParams.idNumber,
-            birthDate: queryParams.birthDate,
+            uniqueId: queryParams.uniqueId,
+            birthday: queryParams.birthday,
             email: queryParams.email,
             password: queryParams.password,
             jwtSecret: queryParams.jwtSecret,
@@ -61,7 +61,7 @@ register = async (queryParams, connectionParams) => {
         // Authorize client
         return login({
             ...queryParams,
-            user: queryParams.idNumber,
+            user: queryParams.uniqueId,
         }, connectionParams);
 
     } catch (e) {
@@ -109,7 +109,7 @@ login = async (queryParams, connectionParams) => {
         if (auth.code !== 200) throw new Error(auth.message);
 
         // Get user info
-        let user = await userController.readOneByIdNumber({
+        let user = await userController.readOneByUniqueId({
             id: auth.data._id
         }, {
             connectionString: connectionParams.connectionString
@@ -195,7 +195,7 @@ middleware = async (queryParams, connectionParams) => {
 
             // Check if user authorized company to get his data
             // Search user
-            let user = await userController.readOneByIdNumber({
+            let user = await userController.readOneByUniqueId({
                 id: queryParams.userId
             }, {
                 connectionString: connectionParams.connectionString
@@ -370,7 +370,7 @@ authorizeCompany = async (queryParams, connectionParams) => {
         const user_id = jwt_claim.id;
 
         // Get user info
-        let user = await userController.readOneByIdNumber({
+        let user = await userController.readOneByUniqueId({
             id: user_id
         }, {
             connectionString: connectionParams.connectionString
@@ -431,7 +431,7 @@ getUserInfo = async (queryParams, connectionParams) => {
         const user_id = jwt_claim.id;
 
         // Get user info
-        let user = await userController.readOneByIdNumber({
+        let user = await userController.readOneByUniqueId({
             id: user_id
         }, {
             connectionString: connectionParams.connectionString
