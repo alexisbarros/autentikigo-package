@@ -108,6 +108,7 @@ login = async (queryParams, connectionParams) => {
         const authorizedCompanies = (user.data.authorizedCompanies || []);
         const authorizedCompany = await authorizedCompanies.find(el => el.clientId._id.toString() === queryParams.clientId);
         if (!authorizedCompany) throw new Error('Client does not have authorization');
+        if (!authorizedCompany.verified) throw new Error('User is not verified');
 
         // Get role
         const role = authorizedCompany.role;
