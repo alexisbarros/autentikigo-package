@@ -10,6 +10,12 @@ let authorizedCompany = new Schema({
         ref: 'AuthorizedCompany'
     },
 
+    verified: {
+        type: Boolean,
+        required: true,
+        default: false
+    },
+
     role: {
         type: String,
         required: false,
