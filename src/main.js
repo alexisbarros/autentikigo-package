@@ -19,10 +19,6 @@ const personDTO = require('../src/dto/person-dto');
  * @property    {date}      birthday            -required
  * @property    {string}    email               -required
  * @property    {string}    password            -required
- * @property    {string}    role                
- * @property    {string}    clientId            -required
- * @property    {string}    jwtSecret           -required
- * @property    {string}    jwtRefreshSecret    -required
  * @property    {string}    cpfApiEndpoint      -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
@@ -33,7 +29,7 @@ register = async (queryParams, connectionParams) => {
 
         // Check required params
         checkRequiredParams.checkParams(
-            ['uniqueId', 'birthday', 'email', 'password', 'clientId', 'jwtSecret', 'jwtRefreshSecret', 'cpfApiEndpoint', 'connectionString'],
+            ['uniqueId', 'birthday', 'email', 'password', 'cpfApiEndpoint', 'connectionString'],
             {
                 ...queryParams,
                 ...connectionParams
@@ -50,8 +46,6 @@ register = async (queryParams, connectionParams) => {
             birthday: queryParams.birthday,
             email: queryParams.email,
             password: queryParams.password,
-            jwtSecret: queryParams.jwtSecret,
-            jwtRefreshSecret: queryParams.jwtRefreshSecret,
             cpfApiEndpoint: queryParams.cpfApiEndpoint
         }, {
             connectionString: connectionParams.connectionString
@@ -59,11 +53,7 @@ register = async (queryParams, connectionParams) => {
 
         if (user.code !== 200) throw new Error(user.message);
 
-        // Authorize client
-        return login({
-            ...queryParams,
-            user: queryParams.uniqueId,
-        }, connectionParams);
+        return httpResponse.ok('User registered successfully', user.data);
 
     } catch (e) {
 
@@ -80,8 +70,7 @@ register = async (queryParams, connectionParams) => {
  * @property    {string}    jwtRefreshSecret    -required
  * @property    {string}    clientId            -required
  * @param       {string}    user                -required
- * @param       {string}    password            -required
- * @param       {string}    role           
+ * @param       {string}    password            -required          
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -102,8 +91,6 @@ login = async (queryParams, connectionParams) => {
         const auth = await authController.login({
             user: queryParams.user,
             password: queryParams.password,
-            jwtSecret: queryParams.jwtSecret,
-            jwtRefreshSecret: queryParams.jwtRefreshSecret,
         }, {
             connectionString: connectionParams.connectionString
         });
@@ -117,12 +104,79 @@ login = async (queryParams, connectionParams) => {
             connectionString: connectionParams.connectionString
         });
 
+        // Check if company has already authorized
+        const authorizedCompanies = (user.data.authorizedCompanies || []);
+        const authorizedCompany = await authorizedCompanies.find(el => el.clientId._id.toString() === queryParams.clientId);
+        if (!authorizedCompany) throw new Error('Client does not have authorization');
+
+        // Get role
+        const role = authorizedCompany.role;
+
+        const authentication_token = await authController.generateNewToken({
+            jwtSecret: queryParams.jwtSecret,
+            userId: user.data._id,
+            role: role,
+            expiresIn: '10m'
+        });
+
+        const authentication_refresh_token = await authController.generateNewToken({
+            jwtSecret: queryParams.jwtRefreshSecret,
+            userId: user.data._id,
+            role: role,
+            expiresIn: '7d'
+        });
+
+        const dataToReturn = {
+            "token": authentication_token,
+            "refreshToken": authentication_refresh_token,
+            "redirectUri": authorizedCompany.redirectUri
+        }
+
+        return httpResponse.ok('Successfull login and authorize', dataToReturn);
+
+    } catch (e) {
+
+        return httpResponse.error(e.message, {});
+
+    }
+}
+
+/**
+ * Authorize company of a logged user
+ * @param       {object}    queryParams             -required
+ * @property    {string}    clientId                -required
+ * @property    {string}    userId                  -required
+ * @property    {string}    role                    
+ * @property    {string}    verified                    
+ * @param       {object}    connectionParams        -required
+ * @property    {string}    connectionString        -required
+ */
+authorizeCompany = async (queryParams, connectionParams) => {
+    try {
+
+        // Check required params
+        checkRequiredParams.checkParams(
+            ['clientId', 'userId', 'connectionString'],
+            {
+                ...queryParams,
+                ...connectionParams
+            }
+        );
+
+        // Get user info
+        let user = await userController.readOneByUniqueId({
+            id: queryParams.userId
+        }, {
+            connectionString: connectionParams.connectionString
+        });
+
         // Transform user info and authorized companies in array of objectId
         user.data.personInfo = user.data.personInfo._id;
         user.data.authorizedCompanies = user.data.authorizedCompanies.map(el => {
             return {
-                'role': el.role,
                 'clientId': el.clientId._id.toString(),
+                'verified': el.verified,
+                'role': el.role,
             }
         });
 
@@ -144,7 +198,8 @@ login = async (queryParams, connectionParams) => {
                 ...authorizedCompanies,
                 {
                     clientId: authorizedCompany.data._id,
-                    role: queryParams.role,
+                    verified: queryParams.verified || false,
+                    role: queryParams.role || 'user',
                 }
             ];
         }
@@ -153,128 +208,101 @@ login = async (queryParams, connectionParams) => {
             userToUpdate, { connectionString: connectionParams.connectionString },
         );
 
-        if (userUpdated.code === 200) {
+        if (userUpdated.code !== 200) throw new Error(userUpdated.message);
 
-            // Get role
-            const role = userToUpdate['authorizedCompanies'].find(authorizedCompanyByUser => authorizedCompanyByUser.clientId === authorizedCompany.data._id.toString())['role'];
+        const dataToReturn = {
+            "redirectUri": authorizedCompany.data.redirectUri
+        };
 
-            const authentication_token = await authController.generateNewToken({
-                jwtSecret: queryParams.jwtSecret,
-                userId: userUpdated.data._id,
-                role: role,
-                expiresIn: '10m'
-            });
-
-            const authentication_refresh_token = await authController.generateNewToken({
-                jwtSecret: queryParams.jwtRefreshSecret,
-                userId: userUpdated.data._id,
-                role: role,
-                expiresIn: '7d'
-            });
-
-            const dataToReturn = {
-                "token": authentication_token,
-                "refreshToken": authentication_refresh_token,
-                "redirectUri": authorizedCompany.data.redirectUri
-            }
-
-            return httpResponse.ok('Successfull login and authorize', dataToReturn);
-        }
+        return httpResponse.ok('Company authorized', dataToReturn);
 
     } catch (e) {
 
-        return httpResponse.error(e.message, {});
+        return httpResponse.error(e.name + ': ' + e.message, {});
 
     }
 }
 
 /**
- * Authentication middleware.
+ * Generate new token.
  * @param       {object}    queryParams         -required
- * @property    {string}    token               -required
  * @property    {string}    refreshToken        -required
  * @property    {string}    jwtSecret           -required
  * @property    {string}    jwtRefreshSecret    -required
  * @property    {string}    clientId            -required
- * @param       {string}    userId              -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
-middleware = async (queryParams, connectionParams) => {
+refreshToken = async (queryParams, connectionParams) => {
 
     try {
 
         // Check required params
         checkRequiredParams.checkParams(
-            ['token', 'refreshToken', 'clientId', 'jwtSecret', 'jwtRefreshSecret', 'userId', 'connectionString'],
+            ['refreshToken', 'clientId', 'jwtRefreshSecret', 'connectionString'],
             {
                 ...queryParams,
                 ...connectionParams
             }
         );
 
-        let dataToReturn = {
-            "token": queryParams.token,
-            "refreshToken": queryParams.refreshToken,
-        }
-
-        // Check token
-        const checkToken = await authController.tokenIsValid({
-            token: queryParams.token,
-            jwtSecret: queryParams.jwtSecret
+        // Get payload of token
+        const payload = await authController.getTokenPayload({
+            token: queryParams.refreshToken,
+            jwtSecret: queryParams.jwtRefreshSecret
         });
-        if (!checkToken) {
 
-            // Check if user authorized company to get his data
-            // Search user
-            let user = await userController.readOneByUniqueId({
-                id: queryParams.userId
-            }, {
-                connectionString: connectionParams.connectionString
-            });
-            if (!user.data._id) throw new Error('User not found');
 
-            // Transform authorized companies in array of objectId
-            user.data.authorizedCompanies = (user.data.authorizedCompanies || []).map(el => el._id);
+        // Check if user authorized company to get his data
+        // Search user
+        let user = await userController.readOneByUniqueId({
+            id: payload.id
+        }, {
+            connectionString: connectionParams.connectionString
+        });
+        if (!user.data._id) throw new Error('User not found');
 
-            // Get authorize client
-            const authorizedCompany = await authorizedCompanyController.readOneById({
-                id: queryParams.clientId
-            }, {
-                connectionString: connectionParams.connectionString
-            })
-            if (!authorizedCompany.data.name) throw new Error('Client does not exist. Check your client Id');
+        // Transform authorized companies in array of objectId
+        user.data.authorizedCompanies = (user.data.authorizedCompanies || []).map(el => el.clientId._id.toString());
 
-            // Check if company has already authorized
-            const authorizedCompanies = (user.data.authorizedCompanies || []);
-            if (!authorizedCompanies.includes(authorizedCompany.data._id))
-                throw new Error('Client is not authorized');
+        // Get authorize client
+        const authorizedCompany = await authorizedCompanyController.readOneById({
+            id: queryParams.clientId
+        }, {
+            connectionString: connectionParams.connectionString
+        })
+        if (!authorizedCompany.data.name) throw new Error('Client does not exist. Check your client Id');
 
-            // Check refresh token
-            const checkRefreshToken = await authController.tokenIsValid({
-                token: queryParams.refreshToken,
-                jwtSecret: queryParams.jwtRefreshSecret
-            });
-            if (!checkRefreshToken) throw new Error('Refresh token invalid');
+        // Check if company has already authorized
+        const authorizedCompanies = (user.data.authorizedCompanies || []);
+        if (!authorizedCompanies.includes(authorizedCompany.data._id.toString()))
+            throw new Error('Client is not authorized');
 
-            const authentication_token = await authController.generateNewToken({
-                jwtSecret: queryParams.jwtSecret,
-                userId: queryParams.userId,
-                expiresIn: '10m'
-            });
+        // Check refresh token
+        const checkRefreshToken = await authController.tokenIsValid({
+            token: queryParams.refreshToken,
+            jwtSecret: queryParams.jwtRefreshSecret
+        });
+        if (!checkRefreshToken) throw new Error('Refresh token invalid');
 
-            const authentication_refresh_token = await authController.generateNewToken({
-                jwtSecret: queryParams.jwtRefreshSecret,
-                userId: queryParams.userId,
-                expiresIn: '7d'
-            });
+        const authentication_token = await authController.generateNewToken({
+            jwtSecret: queryParams.jwtSecret,
+            userId: payload.id,
+            role: payload.role,
+            expiresIn: '10m'
+        });
 
-            dataToReturn = {
-                "token": authentication_token,
-                "refreshToken": authentication_refresh_token,
-            };
+        const authentication_refresh_token = await authController.generateNewToken({
+            jwtSecret: queryParams.jwtRefreshSecret,
+            userId: payload.id,
+            role: payload.role,
+            expiresIn: '7d'
+        });
 
-        }
+        const dataToReturn = {
+            "token": authentication_token,
+            "refreshToken": authentication_refresh_token,
+        };
 
         return httpResponse.ok('User authenticated', dataToReturn);
 
@@ -386,128 +414,11 @@ changePassword = async (queryParams, connectionParams) => {
 
 }
 
-/**
- * Authorize company of a logged user
- * @param       {object}    queryParams             -required
- * @property    {string}    jwtSecret               -required
- * @property    {string}    clientId                -required
- * @property    {string}    authentication_token    -required
- * @param       {object}    connectionParams        -required
- * @property    {string}    connectionString        -required
- */
-authorizeCompany = async (queryParams, connectionParams) => {
-    try {
-        // Get user id in jwt
-        const jwt_claim = await jwt.verify(queryParams.authentication_token, queryParams.jwtSecret);
-        const user_id = jwt_claim.id;
-
-        // Get user info
-        let user = await userController.readOneByUniqueId({
-            id: user_id
-        }, {
-            connectionString: connectionParams.connectionString
-        });
-
-        // Transform user info and authorized companies in array of objectId
-        user.data.personInfo = user.data.personInfo._id;
-        user.data.authorizedCompanies = (user.data.authorizedCompanies || []).map(el => el._id);
-
-        // Authorize client
-        const authorizedCompany = await authorizedCompanyController.readOneById({
-            id: queryParams.clientId
-        }, {
-            connectionString: connectionParams.connectionString
-        });
-
-        if (!authorizedCompany.data.name) throw new Error('Client does not exist. Check your client Id');
-
-        let userToUpdate = user.data;
-
-        // @todo Check if company has already authorized
-        const authorizedCompanies = (userToUpdate['authorizedCompanies'] || []);
-        if (!authorizedCompanies.includes(authorizedCompany.data._id))
-            userToUpdate['authorizedCompanies'] = [...authorizedCompanies, authorizedCompany.data._id];
-
-        const userUpdated = await userController.update(
-            userToUpdate, { connectionString: connectionParams.connectionString }
-        );
-
-        if (userUpdated.code === 200) {
-            const dataToReturn = {
-                "redirectUri": authorizedCompany.data.redirectUri
-            };
-
-            return httpResponse.ok('Company authorized', dataToReturn);
-        }
-
-    } catch (e) {
-
-        return httpResponse.error(e.name + ': ' + e.message, {});
-
-    }
-}
-
-/**
- * Get user info
- * @param       {object}    queryParams             -required
- * @property    {string}    jwtSecret               -required
- * @property    {string}    clientId                -required
- * @property    {string}    authentication_token    -required
- * @param       {object}    connectionParams        -required
- * @property    {string}    connectionString        -required
- */
-getUserInfo = async (queryParams, connectionParams) => {
-    try {
-        // Get user id in jwt
-        const jwt_claim = await jwt.verify(queryParams.authentication_token, queryParams.jwtSecret);
-        const user_id = jwt_claim.id;
-
-        // Get user info
-        let user = await userController.readOneByUniqueId({
-            id: user_id
-        }, {
-            connectionString: connectionParams.connectionString
-        });
-
-        // Transform authorized companies in array of objectId
-        user.data.authorizedCompanies = (user.data.authorizedCompanies || []).map(el => el._id);
-
-        // Authorize client
-        const authorizedCompany = await authorizedCompanyController.readOneById({
-            id: queryParams.clientId
-        }, {
-            connectionString: connectionParams.connectionString
-        })
-
-        if (!authorizedCompany.data.name) throw new Error('Client does not exist. Check your client Id');
-
-        // Check if company has authorization
-        const authorizedCompanies = (user.data.authorizedCompanies || []);
-        if (!authorizedCompanies.includes(authorizedCompany.data._id)) {
-            throw new Error('Client has no authorization to get user info');
-        }
-
-        if (user.code === 200) {
-            const dataToReturn = {
-                "userInfo": personDTO.getPersonDTO(user.data.personInfo)
-            };
-
-            return httpResponse.ok('Get user info successfull', dataToReturn);
-        }
-
-    } catch (e) {
-
-        return httpResponse.error(e.name + ': ' + e.message, {});
-
-    }
-}
-
 module.exports = {
     register,
     login,
-    middleware,
+    refreshToken,
     generateRecoveryPasswordToken,
     changePassword,
     authorizeCompany,
-    getUserInfo,
 }

@@ -24,8 +24,6 @@ const User = require('../models/users.model');
  * @property    {date}      birthday           -required
  * @property    {string}    email               -required
  * @property    {string}    password            -required
- * @property    {string}    jwtSecret           -required
- * @property    {string}    jwtRefreshSecret    -required
  * @property    {string}    cpfApiEndpoint      -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
@@ -96,14 +94,9 @@ exports.register = async (queryParams, connectionParams) => {
         const user = await userController.create(userToRegister, connectionParams);
         if (user.code === 400) throw new Error(user.message);
 
-        // Generate token
-        // const authentication_token = jwt.sign({ id: user.data._id }, queryParams.jwtSecret, { expiresIn: '10m' });
-        // const authentication_refresh_token = jwt.sign({ id: user.data._id }, queryParams.jwtRefreshSecret, { expiresIn: '7d' });
-
         // Create user to send to front
         const dataToFront = {
-            // authentication_token: authentication_token,
-            // authentication_refresh_token: authentication_refresh_token
+            userId: user.data._id
         };
 
         return httpResponse.ok('User successfully registered', dataToFront);
@@ -121,8 +114,6 @@ exports.register = async (queryParams, connectionParams) => {
  * @param       {object}    queryParams         -required
  * @property    {string}    user                -required
  * @property    {string}    password            -required
- * @property    {string}    jwtSecret           -required
- * @property    {string}    jwtRefreshSecret    -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -197,16 +188,10 @@ exports.login = async (queryParams, connectionParams) => {
                 break
         }
 
-        // Generate token
-        // const authentication_token = jwt.sign({ id: user._id }, queryParams.jwtSecret, { expiresIn: '10m' });
-        // const authentication_refresh_token = jwt.sign({ id: user._id }, queryParams.jwtRefreshSecret, { expiresIn: '7d' });
-
         // Create user data to return
         const userToFront = {
             _id: user._id,
             email: user.email,
-            // authentication_token: authentication_token,
-            // authentication_refresh_token: authentication_refresh_token,
         };
 
         // Disconnect to database
