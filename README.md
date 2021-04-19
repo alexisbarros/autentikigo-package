@@ -23,7 +23,7 @@ var autentikigo = require('autentikigo')
 
 ## Register method
 
-```
+```js
 var register = await autentikigo.register(queryParams, connectionParams);
 ```
 
@@ -85,7 +85,7 @@ mongodb://127.0.0.1:27017/autentikigo
 
 ## Login method
 
-```
+```js
 var login = await autentikigo.login(queryParams, connectionParams);
 ```
 
@@ -141,7 +141,7 @@ mongodb://127.0.0.1:27017/autentikigo
 
 ## Authorize method
 
-```
+```js
 var authorize = await autentikigo.authorizeCompany(queryParams, connectionParams);
 ```
 
