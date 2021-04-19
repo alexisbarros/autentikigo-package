@@ -148,7 +148,7 @@ login = async (queryParams, connectionParams) => {
  * @property    {string}    clientId                -required
  * @property    {string}    userId                  -required
  * @property    {string}    role                    
- * @property    {string}    verified                    
+ * @property    {boolean}   verified                    
  * @param       {object}    connectionParams        -required
  * @property    {string}    connectionString        -required
  */
