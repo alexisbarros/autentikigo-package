@@ -225,6 +225,81 @@ authorizeCompany = async (queryParams, connectionParams) => {
 }
 
 /**
+ * Middleware
+ * @param       {object}    queryParams         -required
+ * @property    {string}    token               -required
+ * @property    {string}    jwtSecret           -required
+ * @property    {string}    userId              -required
+ * @property    {string}    clientId            -required
+ * @property    {array}     roles               -required
+ * @property    {string}    endpoint            -required
+ * @property    {string}    method              -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+middleware = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Check required params
+        checkRequiredParams.checkParams(
+            ['token', 'jwtSecret', 'userId', 'clientId', 'roles', 'endpoint', 'method', 'connectionString'],
+            {
+                ...queryParams,
+                ...connectionParams
+            }
+        );
+
+        // Check refresh token
+        const checkRefreshToken = await authController.tokenIsValid({
+            token: queryParams.token,
+            jwtSecret: queryParams.jwtSecret
+        });
+        if (!checkRefreshToken) throw new Error('Refresh token invalid');
+
+        // Get user
+        const user = await userController.readOneByUniqueId({
+            id: queryParams.userId
+        }, {
+            connectionString: connectionParams.connectionString
+        });
+
+        // Get user role
+        const authorizationInfo = user.data.authorizedCompanies.find(el => el.clientId._id.toString() === queryParams.clientId)
+        if (!authorizationInfo) throw new Error('User is not authorized');
+        if (!authorizationInfo.verified) throw new Error('User is not verified');
+        const userRole = authorizationInfo.role;
+
+        // Check if user has authorization to use specific endpoint
+        const role = queryParams.roles.find(el => el.group === userRole);
+        if (!role) throw new Error('User is not authorized to access this endpoint');
+        const permissions = role.permissions;
+        let userHasAuthorization = false;
+        for (const permission of permissions) {
+            if (permission['resource'].slice(-1) === '*') {
+                if (
+                    queryParams.endpoint.startsWith(permission['resource'].slice(0, -1)) &&
+                    permission['methods'].includes(queryParams.method)
+                ) userHasAuthorization = true;
+            } else {
+                if (
+                    queryParams.endpoint === permission['resource'] &&
+                    permission['methods'].includes(queryParams.method)
+                ) userHasAuthorization = true;
+            }
+        }
+
+        if (!userHasAuthorization) throw new Error('User is not authorized to access this endpoint');
+
+        return httpResponse.ok('User is authorized to access this endpoint', {});
+
+    } catch (e) {
+        return httpResponse.error(e.message, {});
+    }
+
+}
+
+/**
  * Generate new token.
  * @param       {object}    queryParams         -required
  * @property    {string}    refreshToken        -required
@@ -418,8 +493,9 @@ changePassword = async (queryParams, connectionParams) => {
 module.exports = {
     register,
     login,
+    authorizeCompany,
+    middleware,
     refreshToken,
     generateRecoveryPasswordToken,
     changePassword,
-    authorizeCompany,
 }
