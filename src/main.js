@@ -171,6 +171,8 @@ authorizeCompany = async (queryParams, connectionParams) => {
             connectionString: connectionParams.connectionString
         });
 
+        if (user.code !== 200) throw new Error('User not found.')
+
         // Transform user info and authorized companies in array of objectId
         user.data.personInfo = user.data.personInfo._id;
         user.data.authorizedCompanies = user.data.authorizedCompanies.map(el => {
