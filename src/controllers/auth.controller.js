@@ -36,6 +36,10 @@ exports.register = async (queryParams, connectionParams) => {
         const users = await userController.readOneByEmail({ email: queryParams.email }, connectionParams);
         if (users.data.email) throw new Error('The email has already been registered');
 
+        // Check if uniqueId (CPF) alredy use to an user
+        const userWithUniqueIdRegistered = await userController.readAllByCpf({ cpf: queryParams.uniqueId }, connectionParams);
+        if (userWithUniqueIdRegistered.code === 200) throw new Error('The uniqueId has already been registered');
+
 
         // Check if person alredy exists
         const person = await personController.readOneByUniqueId(queryParams, connectionParams);
