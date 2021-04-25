@@ -215,6 +215,54 @@ exports.login = async (queryParams, connectionParams) => {
 }
 
 /**
+ * Get user.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    userId              -required
+ * @property    {string}    clientId            -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.getUser = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        // Check user type
+        const user = await userController.readOneByUniqueId({ id: queryParams.userId }, connectionParams);
+        if (!user.data.email) throw new Error('User not found');
+
+        let userToFront = user.data;
+
+        // Get role and verified
+        const authorizedCompany = userToFront.authorizedCompanies.find(el => el.clientId._id.toString() === queryParams.clientId);
+        if (!authorizedCompany) throw new Error('Client does not have authorization');
+        userToFront['role'] = authorizedCompany['role'];
+        userToFront['verified'] = authorizedCompany['verified'];
+
+        delete userToFront.authorizedCompanies;
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.ok('User info successful returned', userToFront);
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
+
+    }
+
+}
+
+/**
  * Check token.
  * @param       {object}    queryParams         -required
  * @property    {string}    token               -required

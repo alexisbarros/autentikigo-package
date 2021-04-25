@@ -302,6 +302,52 @@ middleware = async (queryParams, connectionParams) => {
 }
 
 /**
+ * Get user info.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    token               -required
+ * @property    {string}    jwtSecret           -required
+ * @property    {string}    clientId            -required      
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+getUserInfo = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Check required params
+        checkRequiredParams.checkParams(
+            ['token', 'clientId', 'jwtSecret', 'connectionString'],
+            {
+                ...queryParams,
+                ...connectionParams
+            }
+        );
+
+        // Get payload of token
+        const payload = await authController.getTokenPayload({
+            token: queryParams.token,
+            jwtSecret: queryParams.jwtSecret
+        });
+
+        // Get user info
+        let user = await authController.getUser({
+            userId: payload.id,
+            clientId: queryParams.clientId,
+        }, {
+            connectionString: connectionParams.connectionString
+        });
+        if (!user.data._id) throw new Error('User not found');
+
+        return httpResponse.ok('User info successful returned', user.data);
+
+    } catch (e) {
+
+        return httpResponse.error(e.message, {});
+
+    }
+}
+
+/**
  * Generate new token.
  * @param       {object}    queryParams         -required
  * @property    {string}    refreshToken        -required
@@ -497,6 +543,7 @@ module.exports = {
     login,
     authorizeCompany,
     middleware,
+    getUserInfo,
     refreshToken,
     generateRecoveryPasswordToken,
     changePassword,
