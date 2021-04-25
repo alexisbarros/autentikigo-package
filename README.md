@@ -7,6 +7,8 @@ An authentication package.
 - [Register method](#register-method)
 - [Login method](#login-method)
 - [Authorize method](#authorize-method)
+- [Middleware method](#middleware-method)
+- [Get user info method](#get-user-info-method)
 
 ## Instalation
 
@@ -167,6 +169,144 @@ Tipo: `object`
 #### `verified`
 
 > Parameter that defines if user was verified.
+
+#### `clientId`
+
+> Id of the application/company that wants to authenticate user.
+
+### `connectionParams`
+
+Connection parameters (Required).
+
+Tipo: `object`
+
+- `connectionString` (*string*)
+
+#### `connectionString`
+
+> MongoDB connection string.
+
+##### Exemplo
+
+```
+mongodb://127.0.0.1:27017/autentikigo
+```
+
+## Middleware method
+
+```js
+var middleware = await autentikigo.middleware(queryParams, connectionParams);
+```
+
+### `queryParams`
+
+Required parameters.
+
+Tipo: `object`
+
+- `token` (*string*)
+- `jwtSecret` (*string*)
+- `userId` (*string*)
+- `clientId` (*string*)
+- `roles` (*array*)
+- `endpoint` (*string*)
+- `method` (*string*)
+
+#### `token`
+
+> Authentication token (JWT) obtained in the login method.
+
+#### `jwtSecret`
+
+> Secret to verify the authentication token (JWT).
+
+#### `userId`
+
+> Id of user that will be authorize application/company to use his data.
+
+#### `clientId`
+
+> Id of the application/company that wants to authenticate user.
+
+#### `roles`
+
+> Array of roles (ACL).
+
+##### Exemplo
+
+```json
+[
+    {
+      "group": "user",
+      "permissions": [
+        {
+          "resource": "users/*",
+          "methods": [
+            "POST",
+            "GET",
+            "PUT"
+          ]
+        }
+      ]
+    },
+]
+```
+
+#### `endpoint`
+
+> Endpoint that user want to access.
+
+#### `method`
+
+> Method to use in endpoint.
+
+##### Exemplo
+
+```
+'POST'
+```
+
+### `connectionParams`
+
+Connection parameters (Required).
+
+Tipo: `object`
+
+- `connectionString` (*string*)
+
+#### `connectionString`
+
+> MongoDB connection string.
+
+##### Exemplo
+
+```
+mongodb://127.0.0.1:27017/autentikigo
+```
+
+## Get user info method
+
+```js
+var userInfo = await autentikigo.getUserInfo(queryParams, connectionParams);
+```
+
+### `queryParams`
+
+Required parameters.
+
+Tipo: `object`
+
+- `token` (*string*)
+- `jwtSecret` (*string*)
+- `clientId` (*string*)
+
+#### `token`
+
+> Authentication token (JWT) obtained in the login method.
+
+#### `jwtSecret`
+
+> Secret to verify the authentication token (JWT).
 
 #### `clientId`
 
