@@ -6,14 +6,11 @@ const checkCPF = require('./utils/check-cpf');
 
 // Controllers
 const authController = require('./controllers/auth.controller');
-const authorizedCompanyController = require('./controllers/authorized-companies.controller');
+const projectController = require('./controllers/projects.controller');
 const userController = require('./controllers/users.controller');
 
-// DTO
-const personDTO = require('../src/dto/person-dto');
-
 /**
- * Register user and authorize company
+ * Register user
  * @param       {object}    queryParams         -required
  * @property    {string}    uniqueId            -required
  * @property    {date}      birthday            -required
@@ -64,11 +61,11 @@ register = async (queryParams, connectionParams) => {
 }
 
 /**
- * Login user and authorize company.
+ * Login user.
  * @param       {object}    queryParams         -required
  * @property    {string}    jwtSecret           -required
  * @property    {string}    jwtRefreshSecret    -required
- * @property    {string}    clientId            -required
+ * @property    {string}    projectId           -required
  * @param       {string}    user                -required
  * @param       {string}    password            -required          
  * @param       {object}    connectionParams    -required
@@ -80,7 +77,7 @@ login = async (queryParams, connectionParams) => {
 
         // Check required params
         checkRequiredParams.checkParams(
-            ['user', 'password', 'clientId', 'jwtSecret', 'jwtRefreshSecret', 'connectionString'],
+            ['user', 'password', 'projectId', 'jwtSecret', 'jwtRefreshSecret', 'connectionString'],
             {
                 ...queryParams,
                 ...connectionParams
@@ -104,14 +101,14 @@ login = async (queryParams, connectionParams) => {
             connectionString: connectionParams.connectionString
         });
 
-        // Check if company has already authorized
-        const authorizedCompanies = (user.data.authorizedCompanies || []);
-        const authorizedCompany = await authorizedCompanies.find(el => el.clientId._id.toString() === queryParams.clientId);
-        if (!authorizedCompany) throw new Error('Client does not have authorization');
-        if (!authorizedCompany.verified) throw new Error('User is not verified');
+        // Check if project has already authorized
+        const projects = (user.data.projects || []);
+        const project = await projects.find(el => el.projectId._id.toString() === queryParams.projectId);
+        if (!project) throw new Error('Project does not have authorization');
+        if (!project.verified) throw new Error('User is not verified');
 
         // Get role
-        const role = authorizedCompany.role;
+        const role = project.role;
 
         const authentication_token = await authController.generateNewToken({
             jwtSecret: queryParams.jwtSecret,
@@ -130,10 +127,10 @@ login = async (queryParams, connectionParams) => {
         const dataToReturn = {
             "token": authentication_token,
             "refreshToken": authentication_refresh_token,
-            "redirectUri": authorizedCompany.redirectUri
+            "redirectUri": project.redirectUri
         }
 
-        return httpResponse.ok('Successfull login and authorize', dataToReturn);
+        return httpResponse.ok('Successfull login', dataToReturn);
 
     } catch (e) {
 
@@ -143,21 +140,21 @@ login = async (queryParams, connectionParams) => {
 }
 
 /**
- * Authorize company of a logged user
+ * Authorize project of a logged user
  * @param       {object}    queryParams             -required
- * @property    {string}    clientId                -required
+ * @property    {string}    projectId                -required
  * @property    {string}    userId                  -required
  * @property    {string}    role                    
  * @property    {boolean}   verified                    
  * @param       {object}    connectionParams        -required
  * @property    {string}    connectionString        -required
  */
-authorizeCompany = async (queryParams, connectionParams) => {
+authorizeProject = async (queryParams, connectionParams) => {
     try {
 
         // Check required params
         checkRequiredParams.checkParams(
-            ['clientId', 'userId', 'connectionString'],
+            ['projectId', 'userId', 'connectionString'],
             {
                 ...queryParams,
                 ...connectionParams
@@ -173,34 +170,34 @@ authorizeCompany = async (queryParams, connectionParams) => {
 
         if (user.code !== 200) throw new Error('User not found.')
 
-        // Transform user info and authorized companies in array of objectId
+        // Transform user info and authorized projects in array of objectId
         user.data.personInfo = user.data.personInfo._id;
-        user.data.authorizedCompanies = user.data.authorizedCompanies.map(el => {
+        user.data.projects = user.data.projects.map(el => {
             return {
-                'clientId': el.clientId._id.toString(),
+                'projectId': el.projectId._id.toString(),
                 'verified': el.verified,
                 'role': el.role,
             }
         });
 
         // Authorize client
-        const authorizedCompany = await authorizedCompanyController.readOneById({
-            id: queryParams.clientId
+        const project = await projectController.readOneById({
+            id: queryParams.projectId
         }, {
             connectionString: connectionParams.connectionString
         })
 
-        if (!authorizedCompany.data.name) throw new Error('Client does not exist. Check your client Id');
+        if (!project.data.name) throw new Error('Project does not exist. Check your project Id');
 
         let userToUpdate = user.data;
 
-        // Check if company has already authorized
-        const authorizedCompanies = (userToUpdate['authorizedCompanies'] || []);
-        if (!authorizedCompanies.some(authorizedCompanyByUser => authorizedCompanyByUser.clientId === authorizedCompany.data._id.toString())) {
-            userToUpdate['authorizedCompanies'] = [
-                ...authorizedCompanies,
+        // Check if project has already authorized
+        const projects = (userToUpdate['projects'] || []);
+        if (!projects.some(authorizedProjectByUser => authorizedProjectByUser.projectId === project.data._id.toString())) {
+            userToUpdate['projects'] = [
+                ...projects,
                 {
-                    clientId: authorizedCompany.data._id,
+                    projectId: project.data._id,
                     verified: queryParams.verified || false,
                     role: queryParams.role || 'user',
                 }
@@ -214,10 +211,10 @@ authorizeCompany = async (queryParams, connectionParams) => {
         if (userUpdated.code !== 200) throw new Error(userUpdated.message);
 
         const dataToReturn = {
-            "redirectUri": authorizedCompany.data.redirectUri
+            "redirectUri": project.data.redirectUri
         };
 
-        return httpResponse.ok('Company authorized', dataToReturn);
+        return httpResponse.ok('Project authorized', dataToReturn);
 
     } catch (e) {
 
@@ -232,7 +229,7 @@ authorizeCompany = async (queryParams, connectionParams) => {
  * @property    {string}    token               -required
  * @property    {string}    jwtSecret           -required
  * @property    {string}    userId              -required
- * @property    {string}    clientId            -required
+ * @property    {string}    projectId            -required
  * @property    {array}     roles               -required
  * @property    {string}    endpoint            -required
  * @property    {string}    method              -required
@@ -245,7 +242,7 @@ middleware = async (queryParams, connectionParams) => {
 
         // Check required params
         checkRequiredParams.checkParams(
-            ['token', 'jwtSecret', 'userId', 'clientId', 'roles', 'endpoint', 'method', 'connectionString'],
+            ['token', 'jwtSecret', 'userId', 'projectId', 'roles', 'endpoint', 'method', 'connectionString'],
             {
                 ...queryParams,
                 ...connectionParams
@@ -267,7 +264,7 @@ middleware = async (queryParams, connectionParams) => {
         });
 
         // Get user role
-        const authorizationInfo = user.data.authorizedCompanies.find(el => el.clientId._id.toString() === queryParams.clientId)
+        const authorizationInfo = user.data.projects.find(el => el.projectId._id.toString() === queryParams.projectId)
         if (!authorizationInfo) throw new Error('User is not authorized');
         if (!authorizationInfo.verified) throw new Error('User is not verified');
         const userRole = authorizationInfo.role;
@@ -306,7 +303,7 @@ middleware = async (queryParams, connectionParams) => {
  * @param       {object}    queryParams         -required
  * @property    {string}    token               -required
  * @property    {string}    jwtSecret           -required
- * @property    {string}    clientId            -required      
+ * @property    {string}    projectId            -required      
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -316,7 +313,7 @@ getUserInfo = async (queryParams, connectionParams) => {
 
         // Check required params
         checkRequiredParams.checkParams(
-            ['token', 'clientId', 'jwtSecret', 'connectionString'],
+            ['token', 'projectId', 'jwtSecret', 'connectionString'],
             {
                 ...queryParams,
                 ...connectionParams
@@ -332,7 +329,7 @@ getUserInfo = async (queryParams, connectionParams) => {
         // Get user info
         let user = await authController.getUser({
             userId: payload.id,
-            clientId: queryParams.clientId,
+            projectId: queryParams.projectId,
         }, {
             connectionString: connectionParams.connectionString
         });
@@ -353,7 +350,7 @@ getUserInfo = async (queryParams, connectionParams) => {
  * @property    {string}    refreshToken        -required
  * @property    {string}    jwtSecret           -required
  * @property    {string}    jwtRefreshSecret    -required
- * @property    {string}    clientId            -required
+ * @property    {string}    projectId            -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -363,7 +360,7 @@ refreshToken = async (queryParams, connectionParams) => {
 
         // Check required params
         checkRequiredParams.checkParams(
-            ['refreshToken', 'clientId', 'jwtRefreshSecret', 'connectionString'],
+            ['refreshToken', 'projectId', 'jwtRefreshSecret', 'connectionString'],
             {
                 ...queryParams,
                 ...connectionParams
@@ -377,7 +374,7 @@ refreshToken = async (queryParams, connectionParams) => {
         });
 
 
-        // Check if user authorized company to get his data
+        // Check if user authorized project to get his data
         // Search user
         let user = await userController.readOneByUniqueId({
             id: payload.id
@@ -386,20 +383,20 @@ refreshToken = async (queryParams, connectionParams) => {
         });
         if (!user.data._id) throw new Error('User not found');
 
-        // Transform authorized companies in array of objectId
-        user.data.authorizedCompanies = (user.data.authorizedCompanies || []).map(el => el.clientId._id.toString());
+        // Transform authorized projects in array of objectId
+        user.data.projects = (user.data.projects || []).map(el => el.projectId._id.toString());
 
-        // Get authorize client
-        const authorizedCompany = await authorizedCompanyController.readOneById({
-            id: queryParams.clientId
+        // Get authorize project
+        const project = await projectController.readOneById({
+            id: queryParams.projectId
         }, {
             connectionString: connectionParams.connectionString
         })
-        if (!authorizedCompany.data.name) throw new Error('Client does not exist. Check your client Id');
+        if (!project.data.name) throw new Error('Project does not exist. Check your project Id');
 
-        // Check if company has already authorized
-        const authorizedCompanies = (user.data.authorizedCompanies || []);
-        if (!authorizedCompanies.includes(authorizedCompany.data._id.toString()))
+        // Check if project has already authorized
+        const projects = (user.data.projects || []);
+        if (!projects.includes(project.data._id.toString()))
             throw new Error('Client is not authorized');
 
         // Check refresh token
@@ -541,7 +538,7 @@ changePassword = async (queryParams, connectionParams) => {
 module.exports = {
     register,
     login,
-    authorizeCompany,
+    authorizeProject,
     middleware,
     getUserInfo,
     refreshToken,

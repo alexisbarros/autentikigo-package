@@ -9,10 +9,7 @@ const ObjectId = require('mongoose').Types.ObjectId;
 
 // Controllers
 const userController = require('./users.controller');
-const personController = require('./people.controller');
-
-// DTO
-const personDTO = require('../dto/person-dto');
+const peopleController = require('./people.controller');
 
 // Models
 const User = require('../models/users.model');
@@ -42,14 +39,14 @@ exports.register = async (queryParams, connectionParams) => {
 
 
         // Check if person alredy exists
-        const person = await personController.readOneByUniqueId(queryParams, connectionParams);
+        const person = await peopleController.readOneByUniqueId(queryParams, connectionParams);
         if (!person.data.uniqueId) {
             let personFromApi = await fetch(`${queryParams.cpfApiEndpoint}${queryParams.uniqueId}`).then(res => res.json());
 
             if (personFromApi.status) {
 
                 // Create username
-                const username = await personController.createUsername({ name: personFromApi.nome }, connectionParams);
+                const username = await peopleController.createUsername({ name: personFromApi.nome }, connectionParams);
                 if (username.code === 400) throw new Error(username.message);
 
                 let birthday = personFromApi.nascimento.split('/');
@@ -64,7 +61,7 @@ exports.register = async (queryParams, connectionParams) => {
                     username: username.data.username
                 };
 
-                const newPerson = await personController.create(personToAdd, connectionParams);
+                const newPerson = await peopleController.create(personToAdd, connectionParams);
 
                 if (newPerson.code !== 200) {
                     throw new Error(newPerson.message);
@@ -93,7 +90,7 @@ exports.register = async (queryParams, connectionParams) => {
             password: queryParams.password,
             type: 'person',
             personInfo: person.data._id,
-            authorizedCompanies: [],
+            projects: [],
         }
         const user = await userController.create(userToRegister, connectionParams);
         if (user.code === 400) throw new Error(user.message);
@@ -218,7 +215,7 @@ exports.login = async (queryParams, connectionParams) => {
  * Get user.
  * @param       {object}    queryParams         -required
  * @property    {string}    userId              -required
- * @property    {string}    clientId            -required
+ * @property    {string}    projectId           -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -239,12 +236,12 @@ exports.getUser = async (queryParams, connectionParams) => {
         let userToFront = user.data;
 
         // Get role and verified
-        const authorizedCompany = userToFront.authorizedCompanies.find(el => el.clientId._id.toString() === queryParams.clientId);
-        if (!authorizedCompany) throw new Error('Client does not have authorization');
-        userToFront['role'] = authorizedCompany['role'];
-        userToFront['verified'] = authorizedCompany['verified'];
+        const project = userToFront.projects.find(el => el.projectId._id.toString() === queryParams.projectId);
+        if (!project) throw new Error('Client does not have authorization');
+        userToFront['role'] = project['role'];
+        userToFront['verified'] = project['verified'];
 
-        delete userToFront.authorizedCompanies;
+        delete userToFront.projects;
 
         // Disconnect to database
         await mongoose.disconnect();

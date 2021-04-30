@@ -1,4 +1,4 @@
-exports.getPersonDTO = (data) => {
+exports.getPeopleDTO = (data) => {
     return {
         uniqueId: data.uniqueId,
         country: data.country,

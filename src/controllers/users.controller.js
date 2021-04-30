@@ -20,7 +20,7 @@ const personController = require('./people.controller');
  * @property    {string}    password            -required
  * @property    {string}    type                -required
  * @property    {string}    personInfo
- * @property    {string}    authorizedCompanies
+ * @property    {string}    projects
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -49,6 +49,8 @@ exports.create = async (queryParams, connectionParams) => {
         const userToFront = {
             ...userDTO.getUserDTO(user),
             _id: user._id,
+            _createdBy: user._createdBy,
+            _ownedBy: user._ownedBy,
         };
 
         return httpResponse.ok('User created successfuly', userToFront);
@@ -85,9 +87,9 @@ exports.readOneByUniqueId = async (queryParams, connectionParams) => {
         const user = await User.findById(queryParams.id)
             .populate('personInfo')
             .populate({
-                path: 'authorizedCompanies',
+                path: 'projects',
                 populate: {
-                    path: 'clientId'
+                    path: 'projectId'
                 }
             })
             .exec();
@@ -99,6 +101,8 @@ exports.readOneByUniqueId = async (queryParams, connectionParams) => {
         const userToFront = {
             ...userDTO.getUserDTO(user),
             _id: user._id,
+            _createdBy: user._createdBy,
+            _ownedBy: user._ownedBy,
         };
 
         // Disconnect to database
@@ -141,9 +145,9 @@ exports.readOneByEmail = async (queryParams, connectionParams) => {
         ])
             .populate('personInfo')
             .populate({
-                path: 'authorizedCompanies',
+                path: 'projects',
                 populate: {
-                    path: 'clientId'
+                    path: 'projectId'
                 }
             })
             .exec();
@@ -152,6 +156,8 @@ exports.readOneByEmail = async (queryParams, connectionParams) => {
         const userToFront = {
             ...userDTO.getUserDTO(user),
             _id: user._id,
+            _createdBy: user._createdBy,
+            _ownedBy: user._ownedBy,
         };
 
         // Disconnect to database
@@ -191,9 +197,9 @@ exports.readAll = async (connectionParams) => {
         })
             .populate('personInfo')
             .populate({
-                path: 'authorizedCompanies',
+                path: 'projects',
                 populate: {
-                    path: 'clientId'
+                    path: 'projectId'
                 }
             })
             .exec();
@@ -203,6 +209,8 @@ exports.readAll = async (connectionParams) => {
             return {
                 ...userDTO.getUserDTO(user),
                 _id: user._id,
+                _createdBy: user._createdBy,
+                _ownedBy: user._ownedBy,
             };
         });
 
@@ -252,9 +260,9 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
             })
             .populate('personInfo')
             .populate({
-                path: 'authorizedCompanies',
+                path: 'projects',
                 populate: {
-                    path: 'clientId'
+                    path: 'projectId'
                 }
             })
             .exec();
@@ -264,6 +272,8 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
             return {
                 ...userDTO.getUserDTO(user),
                 _id: user._id,
+                _createdBy: user._createdBy,
+                _ownedBy: user._ownedBy,
             };
         });
 
@@ -313,9 +323,9 @@ exports.readAllByUsername = async (queryParams, connectionParams) => {
             })
             .populate('personInfo')
             .populate({
-                path: 'authorizedCompanies',
+                path: 'projects',
                 populate: {
-                    path: 'clientId'
+                    path: 'projectId'
                 }
             })
             .exec();
@@ -325,6 +335,8 @@ exports.readAllByUsername = async (queryParams, connectionParams) => {
             return {
                 ...userDTO.getUserDTO(user),
                 _id: user._id,
+                _createdBy: user._createdBy,
+                _ownedBy: user._ownedBy,
             };
         });
 
@@ -351,7 +363,7 @@ exports.readAllByUsername = async (queryParams, connectionParams) => {
  * @property    {string}    email               -required
  * @property    {string}    type                -required
  * @property    {string}    personInfo
- * @property    {string}    authorizedCompanies
+ * @property    {string}    projects
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -381,6 +393,8 @@ exports.update = async (queryParams, connectionParams) => {
         const userToFront = {
             ...userDTO.getUserDTO(user),
             _id: user._id,
+            _createdBy: user._createdBy,
+            _ownedBy: user._ownedBy,
         };
 
         return httpResponse.ok('User updated successfuly', userToFront);

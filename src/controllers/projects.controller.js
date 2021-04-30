@@ -1,16 +1,15 @@
 // Modules
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
 const httpResponse = require('../utils/http-response');
 
 // Model
-const AuthorizedCompany = require('../models/authorized-companies.model');
+const Project = require('../models/projects.model');
 
 // DTO
-const authorizedCompanyDTO = require('../dto/authorized-company-dto');
+const projectDTO = require('../dto/project-dto');
 
 /**
- * Register authorizedCompany in db.
+ * Register project in db.
  * @param       {object}    queryParams         -required
  * @property    {string}    name                -required
  * @property    {string}    redirectUri         -required
@@ -28,24 +27,21 @@ exports.create = async (queryParams, connectionParams) => {
             useUnifiedTopology: true
         });
 
-        // Encrypt secret
-        const hashedSecret = await bcrypt.hash(queryParams.secret, 10);
-
-        // Create authorizedCompany in database
-        const data = authorizedCompanyDTO.getAuthorizedCompanyDTO(queryParams);
-        data['secret'] = hashedSecret;
-        const authorizedCompany = await AuthorizedCompany.create(data);
+        // Create project in database
+        const project = await Project.create(projectDTO.getProjectDTO(queryParams));
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        // Create authorizedCompany data to return
-        const authorizedCompanyToFront = {
-            ...authorizedCompanyDTO.getAuthorizedCompanyDTO(authorizedCompany),
-            _id: authorizedCompany._id,
+        // Create project data to return
+        const projectToFront = {
+            ...projectDTO.getProjectDTO(project),
+            _id: project._id,
+            _createdBy: project._createdBy,
+            _ownedBy: project._ownedBy,
         };
 
-        return httpResponse.ok('Authorized Company created successfuly', authorizedCompanyToFront);
+        return httpResponse.ok('Project created successfuly', projectToFront);
 
     } catch (e) {
 
@@ -59,7 +55,7 @@ exports.create = async (queryParams, connectionParams) => {
 };
 
 /**
- * Get one authorizedCompany by id.
+ * Get one project by id.
  * @param       {object}    queryParams         -required
  * @property    {string}    id                  -required
  * @param       {object}    connectionParams    -required
@@ -75,19 +71,21 @@ exports.readOneById = async (queryParams, connectionParams) => {
             useUnifiedTopology: true
         });
 
-        // Get authorizedCompany by id
-        const authorizedCompany = await AuthorizedCompany.findById(queryParams.id).and([{ _deletedAt: null }]);
+        // Get project by id
+        const project = await Project.findById(queryParams.id).and([{ _deletedAt: null }]);
 
-        // Create authorizedCompany data to return
-        const authorizedCompanyToFront = {
-            ...authorizedCompanyDTO.getAuthorizedCompanyDTO(authorizedCompany),
-            _id: authorizedCompany._id,
+        // Create project data to return
+        const projectToFront = {
+            ...projectDTO.getProjectDTO(project),
+            _id: project._id,
+            _createdBy: project._createdBy,
+            _ownedBy: project._ownedBy,
         };
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.ok('Authorized Company returned successfully', authorizedCompanyToFront);
+        return httpResponse.ok('Project returned successfully', projectToFront);
 
     } catch (e) {
 
@@ -101,7 +99,7 @@ exports.readOneById = async (queryParams, connectionParams) => {
 }
 
 /**
- * Get all authorizedCompanies.
+ * Get all projects.
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -115,21 +113,23 @@ exports.readAll = async (connectionParams) => {
             useUnifiedTopology: true
         });
 
-        // Get all authorizedCompanies
-        const authorizedCompanies = await AuthorizedCompany.find({ _deletedAt: null });
+        // Get all projects
+        const projects = await Project.find({ _deletedAt: null });
 
-        // Create authorizedCompany data to return
-        const authorizedCompaniesToFront = authorizedCompanies.map(authorizedCompany => {
+        // Create project data to return
+        const projectsToFront = projects.map(project => {
             return {
-                ...authorizedCompanyDTO.getAuthorizedCompanyDTO(authorizedCompany),
-                _id: authorizedCompany._id,
+                ...projectDTO.getProjectDTO(project),
+                _id: project._id,
+                _createdBy: project._createdBy,
+                _ownedBy: project._ownedBy,
             };
         });
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.ok('Authorized Companies returned successfully', authorizedCompaniesToFront);
+        return httpResponse.ok('Projects returned successfully', projectsToFront);
 
     } catch (e) {
 
@@ -143,9 +143,9 @@ exports.readAll = async (connectionParams) => {
 };
 
 /**
- * Update a authorizedCompany.
+ * Update a project.
  * @param       {object}    queryParams         -required
- * @property    {string}    _id                  -required
+ * @property    {string}    id                  -required
  * @property    {string}    name                -required
  * @property    {string}    redirectUri         -required
  * @param       {object}    connectionParams    -required
@@ -161,11 +161,11 @@ exports.update = async (queryParams, connectionParams) => {
             useUnifiedTopology: true
         });
 
-        // Update authorizedCompany data
-        const authorizedCompany = await AuthorizedCompany.findByIdAndUpdate(
-            queryParams._id,
+        // Update project data
+        const project = await Project.findByIdAndUpdate(
+            queryParams.id,
             {
-                ...authorizedCompanyDTO.getAuthorizedCompanyDTO(queryParams),
+                ...projectDTO.getProjectDTO(queryParams),
                 _updatedAt: Date.now(),
             }
         );
@@ -173,13 +173,15 @@ exports.update = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        // Create authorizedCompany data to return
-        const authorizedCompanyToFront = {
-            ...authorizedCompanyDTO.getAuthorizedCompanyDTO(authorizedCompany),
-            _id: authorizedCompany._id,
+        // Create project data to return
+        const projectToFront = {
+            ...projectDTO.getProjectDTO(project),
+            _id: project._id,
+            _createdBy: project._createdBy,
+            _ownedBy: project._ownedBy,
         };
 
-        return httpResponse.ok('Authorized Company updated successfuly', authorizedCompanyToFront);
+        return httpResponse.ok('Project updated successfuly', projectToFront);
 
     } catch (e) {
 
@@ -193,7 +195,7 @@ exports.update = async (queryParams, connectionParams) => {
 };
 
 /**
- * Delete a authorizedCompany.
+ * Delete a project.
  * @param       {object}    queryParams         -required
  * @property    {string}    id                  -required
  * @param       {object}    connectionParams    -required
@@ -209,13 +211,13 @@ exports.delete = async (queryParams, connectionParams) => {
             useUnifiedTopology: true
         });
 
-        // Delete authorizedCompany by id
-        await AuthorizedCompany.findByIdAndUpdate(queryParams.id, { _deletedAt: Date.now() });
+        // Delete project by id
+        await Project.findByIdAndUpdate(queryParams.id, { _deletedAt: Date.now() });
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.ok('Authorized Company deleted successfuly', {});
+        return httpResponse.ok('Project deleted successfuly', {});
 
     } catch (e) {
 

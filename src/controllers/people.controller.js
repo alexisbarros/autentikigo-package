@@ -40,6 +40,8 @@ exports.create = async (queryParams, connectionParams) => {
         const personToFront = {
             ...personDTO.getPersonDTO(person),
             _id: person._id,
+            _createdBy: person._createdBy,
+            _ownedBy: person._ownedBy,
         };
 
         return httpResponse.ok('Person created successfuly', personToFront);
@@ -84,6 +86,8 @@ exports.readOneByUniqueId = async (queryParams, connectionParams) => {
         const personToFront = {
             ...personDTO.getPersonDTO(person),
             _id: person._id,
+            _createdBy: person._createdBy,
+            _ownedBy: person._ownedBy,
         };
 
         // Disconnect to database
@@ -131,6 +135,8 @@ exports.readOneByUsername = async (queryParams, connectionParams) => {
         const personToFront = {
             ...personDTO.getPersonDTO(person),
             _id: person._id,
+            _createdBy: person._createdBy,
+            _ownedBy: person._ownedBy,
         };
 
         // Disconnect to database
@@ -174,6 +180,8 @@ exports.readAll = async (connectionParams) => {
             return {
                 ...personDTO.getPersonDTO(person),
                 _id: person._id,
+                _createdBy: person._createdBy,
+                _ownedBy: person._ownedBy,
             };
         });
 
@@ -232,6 +240,8 @@ exports.update = async (queryParams, connectionParams) => {
         const personToFront = {
             ...personDTO.getPersonDTO(person),
             _id: person._id,
+            _createdBy: person._createdBy,
+            _ownedBy: person._ownedBy,
         };
 
         return httpResponse.ok('Person updated successfuly', personToFront);

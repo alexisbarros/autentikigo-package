@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
-let AuthorizedCompanySchema = new Schema({
+let ProjectSchema = new Schema({
 
     name: {
         type: String,
@@ -11,16 +11,21 @@ let AuthorizedCompanySchema = new Schema({
 
     redirectUri: {
         type: String,
-        required: true,
+        required: false,
         match: [
             /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/,
             'Please fill a valid email address'
         ],
     },
 
-    secret: {
-        type: String,
-        required: true
+    _createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+
+    _ownedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     },
 
     _createdAt: {
@@ -50,7 +55,7 @@ let AuthorizedCompanySchema = new Schema({
     },
 
 }, {
-    collection: 'AuthorizedCompanies',
+    collection: 'Project',
 });
 
-module.exports = mongoose.model('AuthorizedCompany', AuthorizedCompanySchema);
+module.exports = mongoose.model('Project', ProjectSchema);

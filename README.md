@@ -15,7 +15,6 @@ An authentication package.
 To install the autentikigo, use one of the following command:
 
 - **npm**: `npm install autentikigo`
-- **Yarn**: `yarn add autentikigo`
 
 ## Use
 
@@ -99,7 +98,7 @@ Tipo: `object`
 
 - `user` (*string*)
 - `password` (*string*)
-- `clientId` (*string*)
+- `projectId` (*string*)
 - `jwtSecret` (*string*)
 - `jwtRefreshSecret` (*string*)
 
@@ -111,9 +110,9 @@ Tipo: `object`
 
 > User password.
 
-#### `clientId`
+#### `projectId`
 
-> Id of the application/company that wants to authenticate user.
+> Id of the application/project that wants to authenticate user.
 
 #### `jwtSecret`
 
@@ -144,7 +143,7 @@ mongodb://127.0.0.1:27017/autentikigo
 ## Authorize method
 
 ```js
-var authorize = await autentikigo.authorizeCompany(queryParams, connectionParams);
+var authorize = await autentikigo.authorizeProject(queryParams, connectionParams);
 ```
 
 ### `queryParams`
@@ -156,23 +155,23 @@ Tipo: `object`
 - `userId` (*string*)
 - `role` (*string*)
 - `verified` (*boolean*)
-- `clientId` (*string*)
+- `projectId` (*string*)
 
 #### `userId`
 
-> Id of user that will be authorize application/company to use his data.
+> Id of user that will be authorize application/project to use his data.
 
 #### `role`
 
-> User role in the specifique application/company.
+> User role in the specifique application/project.
 
 #### `verified`
 
 > Parameter that defines if user was verified.
 
-#### `clientId`
+#### `projectId`
 
-> Id of the application/company that wants to authenticate user.
+> Id of the application/project that wants to authenticate user.
 
 ### `connectionParams`
 
@@ -207,7 +206,7 @@ Tipo: `object`
 - `token` (*string*)
 - `jwtSecret` (*string*)
 - `userId` (*string*)
-- `clientId` (*string*)
+- `projectId` (*string*)
 - `roles` (*array*)
 - `endpoint` (*string*)
 - `method` (*string*)
@@ -222,11 +221,11 @@ Tipo: `object`
 
 #### `userId`
 
-> Id of user that will be authorize application/company to use his data.
+> Id of user that will be authorize application/project to use his data.
 
-#### `clientId`
+#### `projectId`
 
-> Id of the application/company that wants to authenticate user.
+> Id of the application/project that wants to authenticate user.
 
 #### `roles`
 
@@ -298,7 +297,7 @@ Tipo: `object`
 
 - `token` (*string*)
 - `jwtSecret` (*string*)
-- `clientId` (*string*)
+- `projectId` (*string*)
 
 #### `token`
 
@@ -308,9 +307,9 @@ Tipo: `object`
 
 > Secret to verify the authentication token (JWT).
 
-#### `clientId`
+#### `projectId`
 
-> Id of the application/company that wants to authenticate user.
+> Id of the application/project that wants to authenticate user.
 
 ### `connectionParams`
 

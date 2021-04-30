@@ -40,6 +40,16 @@ let PersonSchema = new Schema({
         required: true,
     },
 
+    _createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+
+    _ownedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+
     _createdAt: {
         type: Date,
         required: true,
