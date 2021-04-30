@@ -38,7 +38,7 @@ exports.register = async (queryParams, connectionParams) => {
 
         // Check if uniqueId (CPF) alredy use to an user
         const userWithUniqueIdRegistered = await userController.readAllByCpf({ cpf: queryParams.uniqueId }, connectionParams);
-        if (userWithUniqueIdRegistered.code === 200) throw new Error('The uniqueId has already been registered');
+        if (userWithUniqueIdRegistered.data.length) throw new Error('The uniqueId has already been registered');
 
 
         // Check if person alredy exists
