@@ -49,6 +49,8 @@ let AuthorizedCompanySchema = new Schema({
         default: null
     },
 
+}, {
+    collection: 'AuthorizedCompanies',
 });
 
 module.exports = mongoose.model('AuthorizedCompany', AuthorizedCompanySchema);

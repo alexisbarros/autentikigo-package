@@ -66,6 +66,8 @@ let PersonSchema = new Schema({
         default: null
     },
 
+}, {
+    collection: 'People',
 });
 
 module.exports = mongoose.model('Person', PersonSchema);

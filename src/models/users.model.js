@@ -17,9 +17,8 @@ let authorizedCompany = new Schema({
     },
 
     role: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         required: false,
-        default: 'user'
     }
 
 });
@@ -83,6 +82,8 @@ let UserSchema = new Schema({
         default: null
     },
 
+}, {
+    collection: 'Users',
 });
 
 module.exports = mongoose.model('User', UserSchema);
