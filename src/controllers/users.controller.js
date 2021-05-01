@@ -85,13 +85,8 @@ exports.readOneByUniqueId = async (queryParams, connectionParams) => {
 
         // Get user by uniqueId
         const user = await User.findById(queryParams.id)
-            .populate('personInfo')
-            .populate({
-                path: 'projects',
-                populate: {
-                    path: 'projectId'
-                }
-            })
+            .populate({ path: 'personInfo', select: '-_deletedAt -_createdAt -_updatedAt -__v' })
+            .populate('projects')
             .exec();
 
         // Check if user was removed
@@ -143,13 +138,8 @@ exports.readOneByEmail = async (queryParams, connectionParams) => {
             { _deletedAt: null },
             { email: queryParams.email },
         ])
-            .populate('personInfo')
-            .populate({
-                path: 'projects',
-                populate: {
-                    path: 'projectId'
-                }
-            })
+            .populate({ path: 'personInfo', select: '-_deletedAt -_createdAt -_updatedAt -__v' })
+            .populate('projects')
             .exec();
 
         // Create user data to return
@@ -195,13 +185,8 @@ exports.readAll = async (connectionParams) => {
         const users = await User.find({
             _deletedAt: null
         })
-            .populate('personInfo')
-            .populate({
-                path: 'projects',
-                populate: {
-                    path: 'projectId'
-                }
-            })
+            .populate({ path: 'personInfo', select: '-_deletedAt -_createdAt -_updatedAt -__v' })
+            .populate('projects')
             .exec();
 
         // Create user data to return
@@ -258,13 +243,8 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
                     { _deletedAt: null }
                 ]
             })
-            .populate('personInfo')
-            .populate({
-                path: 'projects',
-                populate: {
-                    path: 'projectId'
-                }
-            })
+            .populate({ path: 'personInfo', select: '-_deletedAt -_createdAt -_updatedAt -__v' })
+            .populate('projects')
             .exec();
 
         // Create user data to return
@@ -321,13 +301,8 @@ exports.readAllByUsername = async (queryParams, connectionParams) => {
                     { _deletedAt: null }
                 ]
             })
-            .populate('personInfo')
-            .populate({
-                path: 'projects',
-                populate: {
-                    path: 'projectId'
-                }
-            })
+            .populate({ path: 'personInfo', select: '-_deletedAt -_createdAt -_updatedAt -__v' })
+            .populate('projects')
             .exec();
 
         // Create user data to return

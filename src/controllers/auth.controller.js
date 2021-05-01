@@ -10,6 +10,7 @@ const ObjectId = require('mongoose').Types.ObjectId;
 // Controllers
 const userController = require('./users.controller');
 const peopleController = require('./people.controller');
+const aclController = require('./acl.controller');
 
 // Models
 const User = require('../models/users.model');
@@ -231,14 +232,16 @@ exports.getUser = async (queryParams, connectionParams) => {
 
         // Check user type
         const user = await userController.readOneByUniqueId({ id: queryParams.userId }, connectionParams);
+
         if (!user.data.email) throw new Error('User not found');
 
         let userToFront = user.data;
 
-        // Get role and verified
-        const project = userToFront.projects.find(el => el.projectId._id.toString() === queryParams.projectId);
+        // Get acl and verified
+        const project = userToFront.projects.find(el => el.projectId.toString() === queryParams.projectId);
         if (!project) throw new Error('Client does not have authorization');
-        userToFront['role'] = project['role'];
+        const acl = await aclController.readOneById({ id: project['acl'] }, connectionParams);
+        userToFront['acl'] = acl.data;
         userToFront['verified'] = project['verified'];
 
         delete userToFront.projects;
@@ -281,13 +284,13 @@ exports.tokenIsValid = async (queryParams) => {
  * @param       {object}    queryParams         -required
  * @property    {string}    jwtSecret           -required
  * @property    {string}    userId              -required
- * @property    {string}    role                -required
+ * @property    {string}    acl                 -required
  * @property    {string}    expiresIn           -required
  */
 exports.generateNewToken = async (queryParams) => {
 
     // Generate token
-    const authentication_token = jwt.sign({ id: queryParams.userId, role: queryParams.role }, queryParams.jwtSecret, { expiresIn: queryParams.expiresIn });
+    const authentication_token = jwt.sign({ id: queryParams.userId, acl: queryParams.acl }, queryParams.jwtSecret, { expiresIn: queryParams.expiresIn });
 
     return authentication_token;
 }
