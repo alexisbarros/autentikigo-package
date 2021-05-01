@@ -6,7 +6,7 @@ const httpResponse = require('../utils/http-response');
 const Person = require('../models/people.model');
 
 // DTO
-const personDTO = require('../dto/person-dto');
+const personDTO = require('../dto/people-dto');
 
 /**
  * Register person in db.
@@ -31,14 +31,14 @@ exports.create = async (queryParams, connectionParams) => {
         });
 
         // Create person in database
-        const person = await Person.create(personDTO.getPersonDTO(queryParams));
+        const person = await Person.create(personDTO.getPeopleDTO(queryParams));
 
         // Disconnect to database
         await mongoose.disconnect();
 
         // Create person data to return
         const personToFront = {
-            ...personDTO.getPersonDTO(person),
+            ...personDTO.getPeopleDTO(person),
             _id: person._id,
             _createdBy: person._createdBy,
             _ownedBy: person._ownedBy,
@@ -84,7 +84,7 @@ exports.readOneByUniqueId = async (queryParams, connectionParams) => {
 
         // Create person data to return
         const personToFront = {
-            ...personDTO.getPersonDTO(person),
+            ...personDTO.getPeopleDTO(person),
             _id: person._id,
             _createdBy: person._createdBy,
             _ownedBy: person._ownedBy,
@@ -133,7 +133,7 @@ exports.readOneByUsername = async (queryParams, connectionParams) => {
 
         // Create person data to return
         const personToFront = {
-            ...personDTO.getPersonDTO(person),
+            ...personDTO.getPeopleDTO(person),
             _id: person._id,
             _createdBy: person._createdBy,
             _ownedBy: person._ownedBy,
@@ -178,7 +178,7 @@ exports.readAll = async (connectionParams) => {
         // Create person data to return
         const peopleToFront = people.map(person => {
             return {
-                ...personDTO.getPersonDTO(person),
+                ...personDTO.getPeopleDTO(person),
                 _id: person._id,
                 _createdBy: person._createdBy,
                 _ownedBy: person._ownedBy,
@@ -228,7 +228,7 @@ exports.update = async (queryParams, connectionParams) => {
         const person = await Person.findByIdAndUpdate(
             queryParams._id,
             {
-                ...personDTO.getPersonDTO(queryParams),
+                ...personDTO.getPeopleDTO(queryParams),
                 _updatedAt: Date.now(),
             }
         );
@@ -238,7 +238,7 @@ exports.update = async (queryParams, connectionParams) => {
 
         // Create person data to return
         const personToFront = {
-            ...personDTO.getPersonDTO(person),
+            ...personDTO.getPeopleDTO(person),
             _id: person._id,
             _createdBy: person._createdBy,
             _ownedBy: person._ownedBy,

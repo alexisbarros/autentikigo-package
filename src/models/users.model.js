@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
-let projectSchema = new Schema({
+const projectSchema = new Schema({
 
     projectId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -16,15 +16,16 @@ let projectSchema = new Schema({
         default: false
     },
 
-    role: {
+    acl: {
         type: mongoose.Schema.Types.ObjectId,
+        ref: 'Acl',
         required: false,
     }
 
 });
 
 // Schema
-let UserSchema = new Schema({
+const UserSchema = new Schema({
 
     email: {
         type: String,
@@ -93,7 +94,7 @@ let UserSchema = new Schema({
     },
 
 }, {
-    collection: 'Users',
+    collection: 'User',
 });
 
 module.exports = mongoose.model('User', UserSchema);

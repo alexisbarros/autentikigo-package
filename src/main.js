@@ -107,20 +107,20 @@ login = async (queryParams, connectionParams) => {
         if (!project) throw new Error('Project does not have authorization');
         if (!project.verified) throw new Error('User is not verified');
 
-        // Get role
-        const role = project.role;
+        // Get acl
+        const acl = project.acl;
 
         const authentication_token = await authController.generateNewToken({
             jwtSecret: queryParams.jwtSecret,
             userId: user.data._id,
-            role: role,
+            acl: acl,
             expiresIn: '10m'
         });
 
         const authentication_refresh_token = await authController.generateNewToken({
             jwtSecret: queryParams.jwtRefreshSecret,
             userId: user.data._id,
-            role: role,
+            acl: acl,
             expiresIn: '7d'
         });
 
@@ -144,7 +144,7 @@ login = async (queryParams, connectionParams) => {
  * @param       {object}    queryParams             -required
  * @property    {string}    projectId                -required
  * @property    {string}    userId                  -required
- * @property    {string}    role                    
+ * @property    {string}    acl                    
  * @property    {boolean}   verified                    
  * @param       {object}    connectionParams        -required
  * @property    {string}    connectionString        -required
@@ -168,7 +168,7 @@ authorizeProject = async (queryParams, connectionParams) => {
             connectionString: connectionParams.connectionString
         });
 
-        if (user.code !== 200) throw new Error('User not found.')
+        if (user.code !== 200) throw new Error(user.message);
 
         // Transform user info and authorized projects in array of objectId
         user.data.personInfo = user.data.personInfo._id;
@@ -176,7 +176,7 @@ authorizeProject = async (queryParams, connectionParams) => {
             return {
                 'projectId': el.projectId._id.toString(),
                 'verified': el.verified,
-                'role': el.role,
+                'acl': el.acl,
             }
         });
 
@@ -199,7 +199,7 @@ authorizeProject = async (queryParams, connectionParams) => {
                 {
                     projectId: project.data._id,
                     verified: queryParams.verified || false,
-                    role: queryParams.role || 'user',
+                    acl: queryParams.acl || null,
                 }
             ];
         }
@@ -229,7 +229,7 @@ authorizeProject = async (queryParams, connectionParams) => {
  * @property    {string}    token               -required
  * @property    {string}    jwtSecret           -required
  * @property    {string}    userId              -required
- * @property    {string}    projectId            -required
+ * @property    {string}    projectId           -required
  * @property    {array}     roles               -required
  * @property    {string}    endpoint            -required
  * @property    {string}    method              -required
@@ -409,14 +409,14 @@ refreshToken = async (queryParams, connectionParams) => {
         const authentication_token = await authController.generateNewToken({
             jwtSecret: queryParams.jwtSecret,
             userId: payload.id,
-            role: payload.role,
+            acl: payload.acl,
             expiresIn: '10m'
         });
 
         const authentication_refresh_token = await authController.generateNewToken({
             jwtSecret: queryParams.jwtRefreshSecret,
             userId: payload.id,
-            role: payload.role,
+            acl: payload.acl,
             expiresIn: '7d'
         });
 

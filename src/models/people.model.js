@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
-let PersonSchema = new Schema({
+const PersonSchema = new Schema({
 
     uniqueId: {
         type: String,
@@ -77,7 +77,7 @@ let PersonSchema = new Schema({
     },
 
 }, {
-    collection: 'People',
+    collection: 'Person',
 });
 
 module.exports = mongoose.model('Person', PersonSchema);

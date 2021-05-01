@@ -153,7 +153,7 @@ Required parameters.
 Tipo: `object`
 
 - `userId` (*string*)
-- `role` (*string*)
+- `acl` (*string*)
 - `verified` (*boolean*)
 - `projectId` (*string*)
 
@@ -161,9 +161,9 @@ Tipo: `object`
 
 > Id of user that will be authorize application/project to use his data.
 
-#### `role`
+#### `acl`
 
-> User role in the specifique application/project.
+> User acl in the specifique application/project.
 
 #### `verified`
 
