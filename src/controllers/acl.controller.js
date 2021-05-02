@@ -5,6 +5,7 @@ const httpResponse = require('../utils/http-response');
 // Model
 const Acl = require('../models/acl.model');
 require('../models/acl-actions.model');
+require('../models/modules.model');
 
 // DTO
 const aclDTO = require('../dto/acl-dto');
@@ -73,14 +74,16 @@ exports.readOneById = async (queryParams, connectionParams) => {
         });
 
         // Get acl by id
-        const acl = await Acl.findById(queryParams.id).and([{ _deletedAt: null }])
+        const acl = await Acl.findById(queryParams.id)
+            .and([{ _deletedAt: null }])
             .populate({
                 path: 'permissions',
                 populate: {
-                    path: 'actions',
-                    select: '-_deletedAt -_createdAt -_updatedAt -__v'
+                    path: 'module actions',
+                    select: '-_deletedAt -_createdAt -ownerId -_updatedAt -__v'
                 }
-            }).exec();
+            })
+            .exec();
 
         // Create acl data to return
         const aclToFront = {
@@ -126,8 +129,8 @@ exports.readAll = async (connectionParams) => {
             .populate({
                 path: 'permissions',
                 populate: {
-                    path: 'actions',
-                    select: '-_deletedAt -_createdAt -_updatedAt -__v'
+                    path: 'module actions',
+                    select: '-_deletedAt -_createdAt -ownerId -_updatedAt -__v'
                 }
             })
             .exec();

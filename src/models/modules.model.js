@@ -2,7 +2,9 @@ const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
-const MenuSchema = new Schema({
+let MenuSchema;
+
+MenuSchema = new Schema({
 
     name: {
         type: String,
@@ -12,9 +14,12 @@ const MenuSchema = new Schema({
         type: String,
     },
 
-    submenu: [
-        MenuSchema,
-    ]
+    submenu: {
+        type: [
+            MenuSchema,
+        ],
+        default: undefined,
+    }
 
 });
 

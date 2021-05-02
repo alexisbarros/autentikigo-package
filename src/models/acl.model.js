@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 
 const permissionSchema = new Schema({
 
-    moduleId: {
+    module: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: 'Module'
