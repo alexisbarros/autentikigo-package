@@ -191,6 +191,93 @@ Tipo: `object`
 mongodb://127.0.0.1:27017/autentikigo
 ```
 
+## Generate recovery password token method
+
+```js
+var generateRecoveryPasswordToken = await autentikigo.generateRecoveryPasswordToken(queryParams, connectionParams);
+```
+
+### `queryParams`
+
+Required parameters.
+
+Tipo: `object`
+
+- `email` (*string*)
+- `jwtSecret` (*string*)
+
+#### `email`
+
+> Email of the user who will recover the password.
+
+#### `jwtSecret`
+
+> Secret to create the authentication token (JWT).
+
+### `connectionParams`
+
+Connection parameters (Required).
+
+Tipo: `object`
+
+- `connectionString` (*string*)
+
+#### `connectionString`
+
+> MongoDB connection string.
+
+##### Exemplo
+
+```
+mongodb://127.0.0.1:27017/autentikigo
+```
+
+## Change password method
+
+```js
+var changePassword = await autentikigo.changePassword(queryParams, connectionParams);
+```
+
+### `queryParams`
+
+Required parameters.
+
+Tipo: `object`
+
+- `password` (*string*)
+- `recoveryPasswordToken` (*string*)
+- `jwtSecret` (*string*)
+
+#### `password`
+
+> New password.
+
+#### `recoveryPasswordToken`
+
+> Token to recovery password.
+
+#### `jwtSecret`
+
+> Secret to create the authentication token (JWT).
+
+### `connectionParams`
+
+Connection parameters (Required).
+
+Tipo: `object`
+
+- `connectionString` (*string*)
+
+#### `connectionString`
+
+> MongoDB connection string.
+
+##### Exemplo
+
+```
+mongodb://127.0.0.1:27017/autentikigo
+```
+
 ## Middleware method
 
 ```js
