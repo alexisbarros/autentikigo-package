@@ -12,7 +12,8 @@ const projectDTO = require('../dto/project-dto');
  * Register project in db.
  * @param       {object}    queryParams         -required
  * @property    {string}    name                -required
- * @property    {string}    redirectUri         -required
+ * @property    {string}    description         -required
+ * @property    {string}    site                -required
  * @property    {string}    secret              -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
@@ -147,7 +148,8 @@ exports.readAll = async (connectionParams) => {
  * @param       {object}    queryParams         -required
  * @property    {string}    id                  -required
  * @property    {string}    name                -required
- * @property    {string}    redirectUri         -required
+ * @property    {string}    descriptioin        -required
+ * @property    {string}    site                -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */

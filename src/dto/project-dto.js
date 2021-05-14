@@ -1,6 +1,7 @@
 exports.getProjectDTO = (data) => {
     return {
         name: data.name,
-        redirectUri: data.redirectUri,
+        description: data.description,
+        site: data.site,
     }
 };

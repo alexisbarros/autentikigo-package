@@ -79,7 +79,7 @@ exports.readOneById = async (queryParams, connectionParams) => {
             .populate({
                 path: 'permissions',
                 populate: {
-                    path: 'module actions',
+                    path: 'moduleId actions',
                     select: '-_deletedAt -_createdAt -ownerId -_updatedAt -__v'
                 }
             })
@@ -129,7 +129,7 @@ exports.readAll = async (connectionParams) => {
             .populate({
                 path: 'permissions',
                 populate: {
-                    path: 'module actions',
+                    path: 'moduleId actions',
                     select: '-_deletedAt -_createdAt -ownerId -_updatedAt -__v'
                 }
             })

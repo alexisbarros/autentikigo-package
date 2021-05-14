@@ -9,7 +9,12 @@ let ProjectSchema = new Schema({
         required: true,
     },
 
-    redirectUri: {
+    description: {
+        type: String,
+        required: true,
+    },
+
+    site: {
         type: String,
         required: false,
         match: [

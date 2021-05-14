@@ -127,7 +127,7 @@ login = async (queryParams, connectionParams) => {
         const dataToReturn = {
             "token": authentication_token,
             "refreshToken": authentication_refresh_token,
-            "redirectUri": project.redirectUri
+            "site": project.site
         }
 
         return httpResponse.ok('Successfull login', dataToReturn);
@@ -211,7 +211,7 @@ authorizeProject = async (queryParams, connectionParams) => {
         if (userUpdated.code !== 200) throw new Error(userUpdated.message);
 
         const dataToReturn = {
-            "redirectUri": project.data.redirectUri
+            "site": project.data.site
         };
 
         return httpResponse.ok('Project authorized', dataToReturn);

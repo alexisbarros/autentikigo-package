@@ -9,6 +9,11 @@ const AclActionSchema = new Schema({
         required: true,
     },
 
+    description: {
+        type: String,
+        required: true,
+    },
+
     _createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

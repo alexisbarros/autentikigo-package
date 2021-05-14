@@ -12,6 +12,7 @@ const aclActionDTO = require('../dto/acl-actions-dto');
  * Register acl action in db.
  * @param       {object}    queryParams         -required
  * @property    {string}    name                -required
+ * @property    {string}    description         -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -145,6 +146,7 @@ exports.readAll = async (connectionParams) => {
  * @param       {object}    queryParams         -required
  * @property    {string}    id                  -required
  * @property    {string}    name                -required
+ * @property    {string}    description         -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
