@@ -39,10 +39,11 @@ Tipo: `object`
 - `email` (*string*)
 - `password` (*string*)
 - `cpfApiEndpoint` (*string*)
+- `cnpjApiEndpoint` (*string*)
 
 #### `uniqueId`
 
-> CPF of the user that will be registered.
+> CPF/CNPJ of the user that will be registered.
 
 #### `birthday`
 
@@ -64,6 +65,16 @@ Tipo: `object`
 
 ```
 https://api.cpfcnpj.com.br/5ae973d7a997af13f0aaf2bf60e65803/2/
+```
+
+#### `cnpjApiEndpoint`
+
+> Endpoint of CNPJ API (https://www.cpfcnpj.com.br/).
+
+##### Exemplo
+
+```
+https://api.cpfcnpj.com.br/5ae973d7a997af13f0aaf2bf60e65803/6/
 ```
 
 ### `connectionParams`
@@ -104,7 +115,7 @@ Tipo: `object`
 
 #### `user`
 
-> CPF, usernama or email of the user that will be authenticated.
+> CPF, CNPJ, usernama or email of the user that will be authenticated.
 
 #### `password`
 
