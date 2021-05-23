@@ -50,7 +50,7 @@ exports.register = async (queryParams, connectionParams) => {
             if (userWithUniqueIdRegistered && userWithUniqueIdRegistered.data.length) throw new Error('The uniqueId has already been registered');
 
             // Check if person alredy exists
-            person = await peopleController.readOneByUniqueId(queryParams, connectionParams);
+            person = await peopleController.readOneByUniqueId({ uniqueId: onlyNumbersUniqueId }, connectionParams);
             if (!person.data.uniqueId) {
                 let personFromApi = await fetch(`${queryParams.cpfApiEndpoint}${onlyNumbersUniqueId}`).then(res => res.json());
 
@@ -104,7 +104,7 @@ exports.register = async (queryParams, connectionParams) => {
             if (userWithUniqueIdRegistered && userWithUniqueIdRegistered.data.length) throw new Error('The uniqueId has already been registered');
 
             // Check if company alredy exists
-            company = await companyController.readOneByUniqueId(queryParams, connectionParams);
+            company = await companyController.readOneByUniqueId({ uniqueId: onlyNumbersUniqueId }, connectionParams);
             if (!company.data.uniqueId) {
                 let companyFromApi = await fetch(`${queryParams.cnpjApiEndpoint}${onlyNumbersUniqueId}`).then(res => res.json());
 
