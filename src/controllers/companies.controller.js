@@ -3,10 +3,10 @@ const mongoose = require('mongoose');
 const httpResponse = require('../utils/http-response');
 
 // Model
-const Company = require('../models/people.model');
+const Company = require('../models/companies.model');
 
 // DTO
-const companyDTO = require('../dto/people-dto');
+const companyDTO = require('../dto/companies-dto');
 
 /**
  * Register company in db.

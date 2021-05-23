@@ -1,6 +1,6 @@
 exports.getCompaniesDTO = (data) => {
     return {
-        uniqueId: data.uniqueId,
+        uniqueId: data.uniqueId.replace(/\D/g, ''),
         username: data.username,
         companyName: data.companyName,
         fantasyName: data.fantasyName,

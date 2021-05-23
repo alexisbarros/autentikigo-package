@@ -52,7 +52,7 @@ exports.register = async (queryParams, connectionParams) => {
             // Check if person alredy exists
             person = await peopleController.readOneByUniqueId(queryParams, connectionParams);
             if (!person.data.uniqueId) {
-                let personFromApi = await fetch(`${queryParams.cpfApiEndpoint}${queryParams.uniqueId}`).then(res => res.json());
+                let personFromApi = await fetch(`${queryParams.cpfApiEndpoint}${onlyNumbersUniqueId}`).then(res => res.json());
 
                 if (personFromApi.status) {
 
@@ -96,6 +96,7 @@ exports.register = async (queryParams, connectionParams) => {
             }
         }
         else if (uniqueIdValidator.cnpj.isValid(onlyNumbersUniqueId)) {
+
             type = 'company';
 
             // Check if uniqueId (CNPJ) alredy use to an user
@@ -105,12 +106,12 @@ exports.register = async (queryParams, connectionParams) => {
             // Check if company alredy exists
             company = await companyController.readOneByUniqueId(queryParams, connectionParams);
             if (!company.data.uniqueId) {
-                let companyFromApi = await fetch(`${queryParams.cnpjApiEndpoint}${queryParams.uniqueId}`).then(res => res.json());
+                let companyFromApi = await fetch(`${queryParams.cnpjApiEndpoint}${onlyNumbersUniqueId}`).then(res => res.json());
 
                 if (companyFromApi.status) {
 
                     // Create username
-                    const username = await companyController.createUsername({ name: companyFromApi.fantasyName }, connectionParams);
+                    const username = await companyController.createUsername({ name: companyFromApi.fantasia }, connectionParams);
                     if (username.code === 400) throw new Error(username.message);
 
                     let birthday = companyFromApi.inicioAtividade.split('/');
@@ -153,6 +154,8 @@ exports.register = async (queryParams, connectionParams) => {
             ) {
                 throw new Error('Birth date doesnt correspond to the CPF');
             }
+        } else {
+            throw new Error('Invalid CPF/CNPJ');
         }
 
         // Create a user in db

@@ -1,6 +1,6 @@
 exports.getPeopleDTO = (data) => {
     return {
-        uniqueId: data.uniqueId,
+        uniqueId: data.uniqueId.replace(/\D/g, ''),
         country: data.country,
         name: data.name,
         username: data.username,

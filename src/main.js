@@ -17,6 +17,7 @@ const userController = require('./controllers/users.controller');
  * @property    {string}    email               -required
  * @property    {string}    password            -required
  * @property    {string}    cpfApiEndpoint      -required
+ * @property    {string}    cnpjApiEndpoint     -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -26,16 +27,12 @@ register = async (queryParams, connectionParams) => {
 
         // Check required params
         checkRequiredParams.checkParams(
-            ['uniqueId', 'birthday', 'email', 'password', 'cpfApiEndpoint', 'connectionString'],
+            ['uniqueId', 'birthday', 'email', 'password', 'cpfApiEndpoint', 'cnpjApiEndpoint', 'connectionString'],
             {
                 ...queryParams,
                 ...connectionParams
             }
         );
-
-        // Format and check cpf
-        queryParams.uniqueId = queryParams.uniqueId.replace(/[.-\s]/g, '')
-        if (!checkCPF.checkCPF(queryParams.uniqueId)) throw new Error('Invalid CPF');
 
         // Authenticate user
         const user = await authController.register({
@@ -43,7 +40,8 @@ register = async (queryParams, connectionParams) => {
             birthday: queryParams.birthday,
             email: queryParams.email,
             password: queryParams.password,
-            cpfApiEndpoint: queryParams.cpfApiEndpoint
+            cpfApiEndpoint: queryParams.cpfApiEndpoint,
+            cnpjApiEndpoint: queryParams.cnpjApiEndpoint,
         }, {
             connectionString: connectionParams.connectionString
         });
