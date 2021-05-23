@@ -86,7 +86,7 @@ exports.readOneByUniqueId = async (queryParams, connectionParams) => {
 
         // Get user by uniqueId
         const user = await User.findById(queryParams.id)
-            .populate({ path: 'personInfo', select: '-_deletedAt -_createdAt -_updatedAt -_id -__v' })
+            .populate({ path: 'personInfo companyInfo', select: '-_deletedAt -_createdAt -_updatedAt -_id -__v' })
             .populate('projects')
             .exec();
 

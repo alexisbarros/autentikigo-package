@@ -1,5 +1,5 @@
 // Modules
-const checkCPF = require('./check-cpf');
+const uniqueIdValidator = require('cpf-cnpj-validator');
 
 /**
  * Check if string is a email.
@@ -20,8 +20,9 @@ const checkUserType = async (user) => {
 
     if (isEmail(user)) return 'email';
 
-    const userWithoutDots = user.replace(/[.-\s]/g, '');
-    if (checkCPF.checkCPF(userWithoutDots)) return 'cpf';
+    const onlyNumberUser = user.replace(/\D/g, '');
+    if (uniqueIdValidator.cpf.isValid(onlyNumberUser)) return 'cpf';
+    if (uniqueIdValidator.cnpj.isValid(onlyNumberUser)) return 'cnpj';
 
     if (user.includes('_')) return 'username';
 

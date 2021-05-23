@@ -242,6 +242,24 @@ exports.login = async (queryParams, connectionParams) => {
                 if (!user) throw new Error('Incorrect password');
                 break
 
+            case 'cnpj':
+                users = await userController.readAllByCnpj({ cnpj: queryParams.user }, connectionParams);
+                for (const el of users.data) {
+
+                    const isChecked = await this.verifyPassword(
+                        {
+                            userId: el._id,
+                            password: queryParams.password
+                        },
+                        connectionParams
+                    );
+
+                    // Check pass
+                    if (isChecked) user = el;
+                }
+                if (!user) throw new Error('Incorrect password');
+                break
+
             case 'username':
                 users = await userController.readAllByUsername({ username: queryParams.user }, connectionParams);
                 for (const el of users.data) {

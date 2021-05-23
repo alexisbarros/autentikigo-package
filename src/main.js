@@ -1,8 +1,6 @@
 // Modules
-const jwt = require('jsonwebtoken');
 const httpResponse = require('./utils/http-response');
 const checkRequiredParams = require('./utils/check-required-params');
-const checkCPF = require('./utils/check-cpf');
 
 // Controllers
 const authController = require('./controllers/auth.controller');
@@ -169,12 +167,13 @@ authorizeProject = async (queryParams, connectionParams) => {
         if (user.code !== 200) throw new Error(user.message);
 
         // Transform user info and authorized projects in array of objectId
-        user.data.personInfo = user.data.personInfo._id;
+        user.data.personInfo = user.data.personInfo && user.data.personInfo._id;
+        user.data.companyInfo = user.data.companyInfo && user.data.companyInfo._id;
         user.data.projects = user.data.projects.map(el => {
             return {
                 'projectId': el.projectId._id.toString(),
                 'verified': el.verified,
-                'acl': el.acl,
+                'acl': el.acl || null,
             }
         });
 
