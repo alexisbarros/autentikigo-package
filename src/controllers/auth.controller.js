@@ -5,11 +5,13 @@ const bcrypt = require('bcrypt');
 const httpResponse = require('../utils/http-response');
 const fetch = require("node-fetch");
 const checkUser = require('../utils/check-user-type');
+const uniqueIdValidator = require('cpf-cnpj-validator');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 // Controllers
 const userController = require('./users.controller');
 const peopleController = require('./people.controller');
+const companyController = require('./companies.controller');
 const aclController = require('./acl.controller');
 
 // Models
@@ -19,10 +21,11 @@ const User = require('../models/users.model');
  * Register a user in db.
  * @param       {object}    queryParams         -required
  * @property    {string}    uniqueId            -required
- * @property    {date}      birthday           -required
+ * @property    {date}      birthday            -required
  * @property    {string}    email               -required
  * @property    {string}    password            -required
  * @property    {string}    cpfApiEndpoint      -required
+ * @property    {string}    cnpjApiEndpoint     -required
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -34,63 +37,131 @@ exports.register = async (queryParams, connectionParams) => {
         const users = await userController.readOneByEmail({ email: queryParams.email }, connectionParams);
         if (users.data.email) throw new Error('The email has already been registered');
 
-        // Check if uniqueId (CPF) alredy use to an user
-        const userWithUniqueIdRegistered = await userController.readAllByCpf({ cpf: queryParams.uniqueId }, connectionParams);
-        if (userWithUniqueIdRegistered.data.length) throw new Error('The uniqueId has already been registered');
+        // Check if is a person or company
+        const onlyNumbersUniqueId = queryParams.uniqueId.replace(/\D/g, '');
+        let userWithUniqueIdRegistered;
+        let type, person, company;
+        if (uniqueIdValidator.cpf.isValid(onlyNumbersUniqueId)) {
+            type = 'person';
 
+            // Check if uniqueId (CPF) alredy use to an user
+            userWithUniqueIdRegistered = await userController.readAllByCpf({ cpf: queryParams.uniqueId }, connectionParams);
 
-        // Check if person alredy exists
-        const person = await peopleController.readOneByUniqueId(queryParams, connectionParams);
-        if (!person.data.uniqueId) {
-            let personFromApi = await fetch(`${queryParams.cpfApiEndpoint}${queryParams.uniqueId}`).then(res => res.json());
+            if (userWithUniqueIdRegistered && userWithUniqueIdRegistered.data.length) throw new Error('The uniqueId has already been registered');
 
-            if (personFromApi.status) {
+            // Check if person alredy exists
+            person = await peopleController.readOneByUniqueId(queryParams, connectionParams);
+            if (!person.data.uniqueId) {
+                let personFromApi = await fetch(`${queryParams.cpfApiEndpoint}${queryParams.uniqueId}`).then(res => res.json());
 
-                // Create username
-                const username = await peopleController.createUsername({ name: personFromApi.nome }, connectionParams);
-                if (username.code === 400) throw new Error(username.message);
+                if (personFromApi.status) {
 
-                let birthday = personFromApi.nascimento.split('/');
-                birthday = `${birthday[1]}/${birthday[0]}/${birthday[2]}`;
-                const personToAdd = {
-                    name: personFromApi.nome,
-                    uniqueId: queryParams.uniqueId,
-                    birthday: new Date(birthday),
-                    gender: personFromApi.genero,
-                    mother: personFromApi.mae,
-                    country: queryParams.country,
-                    username: username.data.username
-                };
+                    // Create username
+                    const username = await peopleController.createUsername({ name: personFromApi.nome }, connectionParams);
+                    if (username.code === 400) throw new Error(username.message);
 
-                const newPerson = await peopleController.create(personToAdd, connectionParams);
+                    let birthday = personFromApi.nascimento.split('/');
+                    birthday = `${birthday[1]}/${birthday[0]}/${birthday[2]}`;
+                    const personToAdd = {
+                        name: personFromApi.nome,
+                        uniqueId: queryParams.uniqueId,
+                        birthday: new Date(birthday),
+                        gender: personFromApi.genero,
+                        mother: personFromApi.mae,
+                        country: queryParams.country,
+                        username: username.data.username
+                    };
 
-                if (newPerson.code !== 200) {
-                    throw new Error(newPerson.message);
-                } else {
-                    person.data = newPerson.data;
-                }
+                    const newPerson = await peopleController.create(personToAdd, connectionParams);
 
-            } else throw Error('CPF API erro.');
+                    if (newPerson.code !== 200) {
+                        throw new Error(newPerson.message);
+                    } else {
+                        person.data = newPerson.data;
+                    }
 
+                } else throw Error('CPF API erro.');
+
+            }
+
+            // Check if birthday is correct
+            let paramsBirthday = queryParams.birthday.split('/');
+            paramsBirthday = new Date(`${paramsBirthday[1]}/${paramsBirthday[0]}/${paramsBirthday[2]}`);
+            if (
+                paramsBirthday.getDate() !== new Date(person.data.birthday).getDate() ||
+                paramsBirthday.getMonth() !== new Date(person.data.birthday).getMonth() ||
+                paramsBirthday.getFullYear() !== new Date(person.data.birthday).getFullYear()
+            ) {
+                throw new Error('Birth date doesnt correspond to the CPF');
+            }
         }
+        else if (uniqueIdValidator.cnpj.isValid(onlyNumbersUniqueId)) {
+            type = 'company';
 
-        // Check if birthday is correct
-        let paramsBirthday = queryParams.birthday.split('/');
-        paramsBirthday = new Date(`${paramsBirthday[1]}/${paramsBirthday[0]}/${paramsBirthday[2]}`);
-        if (
-            paramsBirthday.getDate() !== new Date(person.data.birthday).getDate() ||
-            paramsBirthday.getMonth() !== new Date(person.data.birthday).getMonth() ||
-            paramsBirthday.getFullYear() !== new Date(person.data.birthday).getFullYear()
-        ) {
-            throw new Error('Birth date doesnt correspond to the CPF');
+            // Check if uniqueId (CNPJ) alredy use to an user
+            userWithUniqueIdRegistered = await userController.readAllByCnpj({ cnpj: queryParams.uniqueId }, connectionParams);
+            if (userWithUniqueIdRegistered && userWithUniqueIdRegistered.data.length) throw new Error('The uniqueId has already been registered');
+
+            // Check if company alredy exists
+            company = await companyController.readOneByUniqueId(queryParams, connectionParams);
+            if (!company.data.uniqueId) {
+                let companyFromApi = await fetch(`${queryParams.cnpjApiEndpoint}${queryParams.uniqueId}`).then(res => res.json());
+
+                if (companyFromApi.status) {
+
+                    // Create username
+                    const username = await companyController.createUsername({ name: companyFromApi.fantasyName }, connectionParams);
+                    if (username.code === 400) throw new Error(username.message);
+
+                    let birthday = companyFromApi.inicioAtividade.split('/');
+                    birthday = `${birthday[1]}/${birthday[0]}/${birthday[2]}`;
+                    const companyToAdd = {
+                        uniqueId: queryParams.uniqueId,
+                        username: username.data.username,
+                        companyName: companyFromApi.razao,
+                        fantasyName: companyFromApi.fantasia,
+                        responsible: companyFromApi.responsavel,
+                        address: companyFromApi.matrizEndereco,
+                        country: queryParams.country,
+                        simples: companyFromApi.simplesNacional,
+                        phones: companyFromApi.telefones,
+                        situation: companyFromApi.situacao,
+                        legalNature: companyFromApi.naturezaJuridica,
+                        cnae: companyFromApi.cnae,
+                        birthday: new Date(birthday),
+                    };
+
+                    const newCompany = await companyController.create(companyToAdd, connectionParams);
+
+                    if (newCompany.code !== 200) {
+                        throw new Error(newCompany.message);
+                    } else {
+                        company.data = newCompany.data;
+                    }
+
+                } else throw Error('CNPJ API erro.');
+
+            }
+
+            // Check if birthday is correct
+            let paramsBirthday = queryParams.birthday.split('/');
+            paramsBirthday = new Date(`${paramsBirthday[1]}/${paramsBirthday[0]}/${paramsBirthday[2]}`);
+            if (
+                paramsBirthday.getDate() !== new Date(company.data.birthday).getDate() ||
+                paramsBirthday.getMonth() !== new Date(company.data.birthday).getMonth() ||
+                paramsBirthday.getFullYear() !== new Date(company.data.birthday).getFullYear()
+            ) {
+                throw new Error('Birth date doesnt correspond to the CPF');
+            }
         }
 
         // Create a user in db
         const userToRegister = {
             email: queryParams.email,
             password: queryParams.password,
-            type: 'person',
-            personInfo: person.data._id,
+            type: type,
+            personInfo: type === 'person' ? person.data._id : null,
+            companyInfo: type === 'company' ? company.data._id : null,
             projects: [],
         }
         const user = await userController.create(userToRegister, connectionParams);

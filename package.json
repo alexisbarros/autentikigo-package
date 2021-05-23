@@ -1,6 +1,6 @@
 {
   "name": "autentikigo",
-  "version": "1.0.0",
+  "version": "0.0.3",
   "description": "Generic authorization flow.",
   "main": "index.js",
   "scripts": {
@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.0.1",
+    "cpf-cnpj-validator": "^1.0.3",
     "ejs": "^3.1.6",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.11.18",

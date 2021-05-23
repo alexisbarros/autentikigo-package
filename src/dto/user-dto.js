@@ -3,6 +3,7 @@ exports.getUserDTO = (data) => {
         email: data.email,
         type: data.type,
         personInfo: data.personInfo,
+        companyInfo: data.companyInfo,
         projects: data.projects,
     }
 };

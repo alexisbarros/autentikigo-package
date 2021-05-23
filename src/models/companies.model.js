@@ -1,66 +1,74 @@
-// Modules
 const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
-const projectSchema = new Schema({
+const CompanySchema = new Schema({
 
-    projectId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Project'
-    },
-
-    verified: {
-        type: Boolean,
+    uniqueId: {
+        type: String,
         required: true,
-        default: false
     },
 
-    acl: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Acl',
+    username: {
+        type: String,
+        required: true,
+    },
+
+    companyName: {
+        type: String,
+        required: true,
+    },
+
+    fantasyName: {
+        type: String,
+        required: true,
+    },
+
+    responsible: {
+        type: String,
+        required: true,
+    },
+
+    address: {
+        type: Object,
+        required: true,
+    },
+
+    country: {
+        type: String,
         required: false,
-    }
+        default: 'br',
+    },
 
-});
-
-// Schema
-const UserSchema = new Schema({
-
-    email: {
-        type: String,
+    simples: {
+        type: Object,
         required: true,
-        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
     },
 
-    password: {
-        type: String,
-        required: true
-    },
-
-    type: {
-        type: String,
+    phones: {
+        type: Object,
         required: true,
-        enum: [
-            'person',
-            'company',
-        ],
-        default: 'person'
     },
 
-    personInfo: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Person',
+    situation: {
+        type: Object,
+        required: true,
     },
 
-    companyInfo: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Company',
+    legalNature: {
+        type: Object,
+        required: true,
     },
 
-    projects: [
-        projectSchema
-    ],
+    cnae: {
+        type: Object,
+        required: true,
+    },
+
+    birthday: {
+        type: Date,
+        required: true,
+    },
 
     _createdBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -99,7 +107,7 @@ const UserSchema = new Schema({
     },
 
 }, {
-    collection: 'User',
+    collection: 'Company',
 });
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model('Company', CompanySchema);

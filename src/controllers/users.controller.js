@@ -12,6 +12,7 @@ const userDTO = require('../dto/user-dto');
 
 // Controllers
 const personController = require('./people.controller');
+const companyController = require('./companies.controller');
 
 /**
  * Register user in db.
@@ -226,7 +227,7 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
 
     try {
 
-        const person = await personController.readOneByUniqueId({ uniqueId: queryParams.cpf.replace(/[.-\s]/g, '') }, connectionParams);
+        const person = await personController.readOneByUniqueId({ uniqueId: queryParams.cpf.replace(/\D/g, '') }, connectionParams);
         if (!person.data) throw new Error('User not found');
 
         // Connect to database
@@ -244,6 +245,64 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
                 ]
             })
             .populate({ path: 'personInfo', select: '-_deletedAt -_createdAt -_updatedAt -__v' })
+            .populate('projects')
+            .exec();
+
+        // Create user data to return
+        const usersToFront = users.map(user => {
+            return {
+                ...userDTO.getUserDTO(user),
+                _id: user._id,
+                _createdBy: user._createdBy,
+                _ownedBy: user._ownedBy,
+            };
+        });
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.ok('Users returned successfully', usersToFront);
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.name + ': ' + e.message, {});
+
+    }
+
+};
+
+/**
+ * Get all users with specific cnpj.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    cnpj                -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.readAllByCnpj = async (queryParams, connectionParams) => {
+
+    try {
+
+        const company = await companyController.readOneByUniqueId({ uniqueId: queryParams.cnpj.replace(/\D/g, '') }, connectionParams);
+        if (!company.data) throw new Error('User not found');
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        // Get all users
+        const users = await User
+            .find({
+                $and: [
+                    { companyInfo: new ObjectId(company.data._id) },
+                    { _deletedAt: null }
+                ]
+            })
+            .populate({ path: 'companyInfo', select: '-_deletedAt -_createdAt -_updatedAt -__v' })
             .populate('projects')
             .exec();
 
