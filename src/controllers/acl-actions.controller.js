@@ -47,7 +47,7 @@ exports.create = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -73,6 +73,8 @@ exports.readOneById = async (queryParams, connectionParams) => {
         // Get aclAction by id
         const aclAction = await AclAction.findById(queryParams.id).and([{ _deletedAt: null }]);
 
+        if (!aclAction) throw new Error('ACL action not found');
+
         // Create aclAction data to return
         const aclActionToFront = {
             ...aclActionDTO.getAclActionDTO(aclAction),
@@ -91,7 +93,7 @@ exports.readOneById = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -114,6 +116,8 @@ exports.readAll = async (connectionParams) => {
 
         // Get all aclActions
         const aclActions = await AclAction.find({ _deletedAt: null });
+
+        if (!aclAction.length) throw new Error('ACL action not found');
 
         // Create aclAction data to return
         const aclActionsToFront = aclActions.map(aclAction => {
@@ -187,7 +191,7 @@ exports.update = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -223,7 +227,7 @@ exports.delete = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 

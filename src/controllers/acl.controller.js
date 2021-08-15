@@ -50,7 +50,7 @@ exports.create = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -85,6 +85,8 @@ exports.readOneById = async (queryParams, connectionParams) => {
             })
             .exec();
 
+        if (!acl) throw new Error('ACL not found');
+
         // Create acl data to return
         const aclToFront = {
             ...aclDTO.getAclDTO(acl),
@@ -103,7 +105,7 @@ exports.readOneById = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -134,6 +136,8 @@ exports.readAll = async (connectionParams) => {
                 }
             })
             .exec();
+
+        if (!acls.length) throw new Error('ACLs not found');
 
         // Create acl data to return
         const aclsToFront = acls.map(acl => {
@@ -208,7 +212,7 @@ exports.update = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -244,7 +248,7 @@ exports.delete = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
