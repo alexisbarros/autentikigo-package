@@ -48,7 +48,7 @@ exports.create = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -74,6 +74,8 @@ exports.readOneById = async (queryParams, connectionParams) => {
         // Get module by id
         const module = await Module.findById(queryParams.id).and([{ _deletedAt: null }]);
 
+        if (!module) throw new Error('Module not found');
+
         // Create module data to return
         const moduleToFront = {
             ...moduleDTO.getModuleDTO(module),
@@ -92,7 +94,7 @@ exports.readOneById = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -115,6 +117,8 @@ exports.readAll = async (connectionParams) => {
 
         // Get all modules
         const modules = await Module.find({ _deletedAt: null });
+
+        if (!modules.length) throw new Error('Modules not found');
 
         // Create module data to return
         const modulesToFront = modules.map(module => {
@@ -189,7 +193,7 @@ exports.update = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -225,7 +229,7 @@ exports.delete = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 

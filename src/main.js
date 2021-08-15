@@ -215,7 +215,7 @@ authorizeProject = async (queryParams, connectionParams) => {
 
     } catch (e) {
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 }

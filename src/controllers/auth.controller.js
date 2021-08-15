@@ -179,7 +179,7 @@ exports.register = async (queryParams, connectionParams) => {
 
     } catch (e) {
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -226,6 +226,7 @@ exports.login = async (queryParams, connectionParams) => {
 
             case 'cpf':
                 users = await userController.readAllByCpf({ cpf: queryParams.user }, connectionParams);
+                if (!users.data.length) throw new Error('User not found');
                 for (const el of users.data) {
 
                     const isChecked = await this.verifyPassword(
@@ -244,6 +245,7 @@ exports.login = async (queryParams, connectionParams) => {
 
             case 'cnpj':
                 users = await userController.readAllByCnpj({ cnpj: queryParams.user }, connectionParams);
+                if (!users.data.length) throw new Error('User not found');
                 for (const el of users.data) {
 
                     const isChecked = await this.verifyPassword(
@@ -262,6 +264,7 @@ exports.login = async (queryParams, connectionParams) => {
 
             case 'username':
                 users = await userController.readAllByUsername({ username: queryParams.user }, connectionParams);
+                if (!Object.keys(users.data).length) throw new Error('User not found');
                 for (const el of users.data) {
 
                     const isChecked = await this.verifyPassword(
@@ -298,7 +301,7 @@ exports.login = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -333,6 +336,7 @@ exports.getUser = async (queryParams, connectionParams) => {
         const project = userToFront.projects.find(el => el.projectId.toString() === queryParams.projectId);
         if (!project) throw new Error('Client does not have authorization');
         const acl = await aclController.readOneById({ id: project['acl'] }, connectionParams);
+        if (!Object.keys(acl.data).length) throw new Error('ACL not found');
         userToFront['acl'] = acl.data;
         userToFront['verified'] = project['verified'];
 
@@ -348,7 +352,7 @@ exports.getUser = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -426,6 +430,8 @@ exports.verifyPassword = async (queryParams, connectionParams) => {
                 { _deletedAt: null },
             ]
         });
+
+        if (!user) throw new Error('User not found');
 
         // Disconnect to database
         await mongoose.disconnect();

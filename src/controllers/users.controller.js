@@ -61,7 +61,7 @@ exports.create = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -86,12 +86,12 @@ exports.readOneByUniqueId = async (queryParams, connectionParams) => {
 
         // Get user by uniqueId
         const user = await User.findById(queryParams.id)
-            .populate({ path: 'personInfo companyInfo', select: '-_deletedAt -_createdAt -_updatedAt -_id -__v' })
+            .and([{ _deletedAt: null }])
+            .populate({ path: 'personInfo companyInfo', select: '-_deletedAt -_createdAt -_updatedAt -__v' })
             .populate('projects')
             .exec();
 
-        // Check if user was removed
-        if (user._deletedAt) new Error('User removed');
+        if (!user) throw new Error('User not found');
 
         // Create user data to return
         const userToFront = {
@@ -111,7 +111,7 @@ exports.readOneByUniqueId = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -143,6 +143,8 @@ exports.readOneByEmail = async (queryParams, connectionParams) => {
             .populate('projects')
             .exec();
 
+        if (!user) throw new Error('User not found');
+
         // Create user data to return
         const userToFront = {
             ...userDTO.getUserDTO(user),
@@ -161,7 +163,7 @@ exports.readOneByEmail = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -190,6 +192,8 @@ exports.readAll = async (connectionParams) => {
             .populate('projects')
             .exec();
 
+        if (!users.length) throw new Error('Users not found');
+
         // Create user data to return
         const usersToFront = users.map(user => {
             return {
@@ -210,7 +214,7 @@ exports.readAll = async (connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -228,7 +232,7 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
     try {
 
         const person = await personController.readOneByUniqueId({ uniqueId: queryParams.cpf.replace(/\D/g, '') }, connectionParams);
-        if (!person.data) throw new Error('User not found');
+        if (!person.data) throw new Error('Person not found');
 
         // Connect to database
         await mongoose.connect(connectionParams.connectionString, {
@@ -248,6 +252,8 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
             .populate('projects')
             .exec();
 
+        if (!users.length) throw new Error('Users not found');
+
         // Create user data to return
         const usersToFront = users.map(user => {
             return {
@@ -268,7 +274,7 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -306,6 +312,8 @@ exports.readAllByCnpj = async (queryParams, connectionParams) => {
             .populate('projects')
             .exec();
 
+        if (!users.length) throw new Error('Users not found');
+
         // Create user data to return
         const usersToFront = users.map(user => {
             return {
@@ -326,7 +334,7 @@ exports.readAllByCnpj = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -364,6 +372,8 @@ exports.readAllByUsername = async (queryParams, connectionParams) => {
             .populate('projects')
             .exec();
 
+        if (!users.length) throw new Error('Users not found');
+
         // Create user data to return
         const usersToFront = users.map(user => {
             return {
@@ -384,7 +394,7 @@ exports.readAllByUsername = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -438,7 +448,7 @@ exports.update = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -480,7 +490,7 @@ exports.updatePassword = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -516,7 +526,7 @@ exports.delete = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 

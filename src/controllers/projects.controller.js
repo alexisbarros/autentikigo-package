@@ -49,7 +49,7 @@ exports.create = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -75,6 +75,8 @@ exports.readOneById = async (queryParams, connectionParams) => {
         // Get project by id
         const project = await Project.findById(queryParams.id).and([{ _deletedAt: null }]);
 
+        if (!project) throw new Error('Project not found');
+
         // Create project data to return
         const projectToFront = {
             ...projectDTO.getProjectDTO(project),
@@ -93,7 +95,7 @@ exports.readOneById = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -116,6 +118,8 @@ exports.readAll = async (connectionParams) => {
 
         // Get all projects
         const projects = await Project.find({ _deletedAt: null });
+
+        if (!projects.length) throw new Error('Projects not found');
 
         // Create project data to return
         const projectsToFront = projects.map(project => {
@@ -190,7 +194,7 @@ exports.update = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -226,7 +230,7 @@ exports.delete = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 

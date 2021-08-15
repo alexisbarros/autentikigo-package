@@ -58,7 +58,7 @@ exports.create = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -89,6 +89,8 @@ exports.readOneByUniqueId = async (queryParams, connectionParams) => {
             ]
         });
 
+        if (!company) throw new Error('Company not found');
+
         // Create company data to return
         const companyToFront = {
             ...companyDTO.getCompaniesDTO(company),
@@ -107,7 +109,7 @@ exports.readOneByUniqueId = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -138,6 +140,8 @@ exports.readOneByUsername = async (queryParams, connectionParams) => {
             ]
         });
 
+        if (!company) throw new Error('Company not found');
+
         // Create company data to return
         const companyToFront = {
             ...companyDTO.getCompaniesDTO(company),
@@ -156,7 +160,7 @@ exports.readOneByUsername = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -182,6 +186,8 @@ exports.readAll = async (connectionParams) => {
             _deletedAt: null
         });
 
+        if (!people.length) throw new Error('People not found');
+
         // Create company data to return
         const peopleToFront = people.map(company => {
             return {
@@ -202,7 +208,7 @@ exports.readAll = async (connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -265,7 +271,7 @@ exports.update = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -301,7 +307,7 @@ exports.delete = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
@@ -346,7 +352,7 @@ exports.createUsername = async (queryParams, connectionParams) => {
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.error(e.name + ': ' + e.message, {});
+        return httpResponse.error(e.message, {});
 
     }
 
