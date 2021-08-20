@@ -1,6 +1,6 @@
 {
   "name": "autentikigo",
-  "version": "0.0.4",
+  "version": "0.0.7",
   "description": "Generic authorization flow.",
   "main": "index.js",
   "scripts": {

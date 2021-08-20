@@ -16,6 +16,11 @@ const aclController = require('./acl.controller');
 
 // Models
 const User = require('../models/users.model');
+const People = require('../models/people.model');
+const Company = require('../models/companies.model');
+
+// DTO
+const userDTO = require('../dto/user-dto');
 
 /**
  * Register a user in db.
@@ -205,80 +210,32 @@ exports.login = async (queryParams, connectionParams) => {
 
         // Check user type
         let user;
+        let userLogged;
         const userType = await checkUser.checkUserType(queryParams.user);
 
-        let users;
         switch (userType) {
             case 'email':
-                const userToCheck = await userController.readOneByEmail({ email: queryParams.user }, connectionParams);
-                if (!userToCheck.data.email) throw new Error('User not found');
-                // Check pass
-                const isChecked = await this.verifyPassword(
-                    {
-                        userId: userToCheck.data._id,
-                        password: queryParams.password
-                    },
-                    connectionParams
-                );
-                if (!isChecked) throw new Error('Incorrect password');
-                user = userToCheck.data;
+                userLogged = await this.loginWithEmail({ email: queryParams.user, password: queryParams.password }, connectionParams);
+                if (userLogged.code !== 200) throw new Error(userLogged.message);
+                user = userLogged.data;
                 break
 
             case 'cpf':
-                users = await userController.readAllByCpf({ cpf: queryParams.user }, connectionParams);
-                if (!users.data.length) throw new Error('User not found');
-                for (const el of users.data) {
-
-                    const isChecked = await this.verifyPassword(
-                        {
-                            userId: el._id,
-                            password: queryParams.password
-                        },
-                        connectionParams
-                    );
-
-                    // Check pass
-                    if (isChecked) user = el;
-                }
-                if (!user) throw new Error('Incorrect password');
+                userLogged = await this.loginWithCpf({ cpf: queryParams.user.replace(/\D/g, ''), password: queryParams.password }, connectionParams);
+                if (userLogged.code !== 200) throw new Error(userLogged.message);
+                user = userLogged.data;
                 break
 
             case 'cnpj':
-                users = await userController.readAllByCnpj({ cnpj: queryParams.user }, connectionParams);
-                if (!users.data.length) throw new Error('User not found');
-                for (const el of users.data) {
-
-                    const isChecked = await this.verifyPassword(
-                        {
-                            userId: el._id,
-                            password: queryParams.password
-                        },
-                        connectionParams
-                    );
-
-                    // Check pass
-                    if (isChecked) user = el;
-                }
-                if (!user) throw new Error('Incorrect password');
+                userLogged = await this.loginWithCnpj({ cnpj: queryParams.user.replace(/\D/g, ''), password: queryParams.password }, connectionParams);
+                if (userLogged.code !== 200) throw new Error(userLogged.message);
+                user = userLogged.data;
                 break
 
             case 'username':
-                users = await userController.readAllByUsername({ username: queryParams.user }, connectionParams);
-                if (!Object.keys(users.data).length) throw new Error('User not found');
-                for (const el of users.data) {
-
-                    const isChecked = await this.verifyPassword(
-                        {
-                            userId: el._id,
-                            password: queryParams.password
-                        },
-                        connectionParams
-                    );
-
-                    // Check pass
-                    if (isChecked) user = el;
-                }
-                if (!user) throw new Error('Incorrect password');
+                userLogged = await this.loginWithUsername({ username: queryParams.user, password: queryParams.password }, connectionParams);
+                if (userLogged.code !== 200) throw new Error(userLogged.message);
+                user = userLogged.data;
                 break
 
             default:
@@ -286,10 +243,228 @@ exports.login = async (queryParams, connectionParams) => {
         }
 
         // Create user data to return
-        const userToFront = {
-            _id: user._id,
-            email: user.email,
-        };
+        const userToFront = userDTO.getUserDTO(user);
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.ok('User successfully logged', userToFront);
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.message, {});
+
+    }
+
+}
+
+/**
+ * Login user with e-mail.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    email               -required
+ * @property    {string}    password            -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.loginWithEmail = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        // Get user by e-mail
+        const user = await User.findOne().and([
+            { _deletedAt: null },
+            { email: queryParams.email },
+        ])
+            .populate({ path: 'projects', populate: { path: 'projectId' } })
+            .exec();
+        if (!user) throw new Error('User not found');
+
+        // Check password
+        const correctPassword = await bcrypt.compare(queryParams.password, user.password);
+        if (!correctPassword) throw new Error('Incorrect password');
+
+        // Create user data to return
+        const userToFront = userDTO.getUserDTO(user);
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.ok('User successfully logged', userToFront);
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.message, {});
+
+    }
+
+}
+
+/**
+ * Login user with cpf.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    cpf                 -required
+ * @property    {string}    password            -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.loginWithCpf = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        // Get person
+        const person = await People.findOne().and([
+            { uniqueId: queryParams.cpf },
+            { _deletedAt: null }
+        ]);
+        if (!person) throw new Error('Person not found');
+
+        // Get user by cpf
+        const user = await User.findOne().and([
+            { personInfo: new ObjectId(person._id) },
+            { _deletedAt: null },
+        ])
+            .populate({ path: 'projects', populate: { path: 'projectId' } })
+            .exec();
+        if (!user) throw new Error('User not found');
+
+        // Check password
+        const correctPassword = await bcrypt.compare(queryParams.password, user.password);
+        if (!correctPassword) throw new Error('Incorrect password');
+
+        // Create user data to return
+        const userToFront = userDTO.getUserDTO(user);
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.ok('User successfully logged', userToFront);
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.message, {});
+
+    }
+
+}
+
+/**
+ * Login user with cnpj.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    cnpj                -required
+ * @property    {string}    password            -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.loginWithCnpj = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        // Get company
+        const company = await Company.findOne().and([
+            { uniqueId: queryParams.cnpj },
+            { _deletedAt: null }
+        ]);
+        if (!company) throw new Error('Company not found');
+
+        // Get user by cnpj
+        const user = await User.findOne().and([
+            { companyInfo: new ObjectId(company._id) },
+            { _deletedAt: null },
+        ])
+            .populate({ path: 'projects', populate: { path: 'projectId' } })
+            .exec();
+        if (!user) throw new Error('User not found');
+
+        // Check password
+        const correctPassword = await bcrypt.compare(queryParams.password, user.password);
+        if (!correctPassword) throw new Error('Incorrect password');
+
+        // Create user data to return
+        const userToFront = userDTO.getUserDTO(user);
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.ok('User successfully logged', userToFront);
+
+    } catch (e) {
+
+        // Disconnect to database
+        await mongoose.disconnect();
+
+        return httpResponse.error(e.message, {});
+
+    }
+
+}
+
+/**
+ * Login user with username.
+ * @param       {object}    queryParams         -required
+ * @property    {string}    username            -required
+ * @property    {string}    password            -required
+ * @param       {object}    connectionParams    -required
+ * @property    {string}    connectionString    -required
+ */
+exports.loginWithUsername = async (queryParams, connectionParams) => {
+
+    try {
+
+        // Connect to database
+        await mongoose.connect(connectionParams.connectionString, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+
+        // Get person
+        const person = await People.findOne().and([
+            { username: queryParams.username },
+            { _deletedAt: null }
+        ]);
+        if (!person) throw new Error('Person not found');
+
+        // Get user by cpf
+        const user = await User.findOne().and([
+            { personInfo: new ObjectId(person._id) },
+            { _deletedAt: null },
+        ])
+            .populate({ path: 'projects', populate: { path: 'projectId' } })
+            .exec();
+        if (!user) throw new Error('User not found');
+
+        // Check password
+        const correctPassword = await bcrypt.compare(queryParams.password, user.password);
+        if (!correctPassword) throw new Error('Incorrect password');
+
+        // Create user data to return
+        const userToFront = userDTO.getUserDTO(user);
 
         // Disconnect to database
         await mongoose.disconnect();
@@ -325,27 +500,41 @@ exports.getUser = async (queryParams, connectionParams) => {
             useUnifiedTopology: true
         });
 
-        // Check user type
-        const user = await userController.readOneByUniqueId({ id: queryParams.userId }, connectionParams);
+        // Get user populated
+        let user = await User.findById(queryParams.userId)
+            .and([{ _deletedAt: null }]).select('_id email type personInfo companyInfo projects')
+            .populate({ path: 'personInfo companyInfo', select: '-_deletedAt -_createdAt -_updatedAt -__v' })
+            .populate({
+                path: 'projects',
+                populate: {
+                    path: 'projectId acl',
+                    select: 'name projectId permissions',
+                    populate: {
+                        path: 'permissions',
+                        populate: {
+                            path: 'actions moduleId',
+                            select: 'name _id menu'
+                        },
+                    }
+                }
+            })
+            .exec();
 
-        if (!user.data.email) throw new Error('User not found');
-
-        let userToFront = user.data;
+        if (!user) throw new Error('User not found');
+        user = user.toJSON();
 
         // Get acl and verified
-        const project = userToFront.projects.find(el => el.projectId.toString() === queryParams.projectId);
+        const project = user.projects.find(el => el.projectId._id.toString() === queryParams.projectId);
         if (!project) throw new Error('Client does not have authorization');
-        const acl = await aclController.readOneById({ id: project['acl'] }, connectionParams);
-        if (!Object.keys(acl.data).length) throw new Error('ACL not found');
-        userToFront['acl'] = acl.data;
-        userToFront['verified'] = project['verified'];
+        user['acl'] = project['acl'];
+        user['verified'] = project['verified'];
 
-        delete userToFront.projects;
+        delete user.projects;
 
         // Disconnect to database
         await mongoose.disconnect();
 
-        return httpResponse.ok('User info successful returned', userToFront);
+        return httpResponse.ok('User info successful returned', user);
 
     } catch (e) {
 
@@ -380,13 +569,18 @@ exports.tokenIsValid = async (queryParams) => {
  * @param       {object}    queryParams         -required
  * @property    {string}    jwtSecret           -required
  * @property    {string}    userId              -required
+ * @property    {string}    projectId           -required
  * @property    {string}    acl                 -required
  * @property    {string}    expiresIn           -required
  */
 exports.generateNewToken = async (queryParams) => {
 
     // Generate token
-    const authentication_token = jwt.sign({ id: queryParams.userId, acl: queryParams.acl }, queryParams.jwtSecret, { expiresIn: queryParams.expiresIn });
+    const authentication_token = jwt.sign(
+        { id: queryParams.userId, acl: queryParams.acl, projectId: queryParams.projectId },
+        queryParams.jwtSecret,
+        { expiresIn: queryParams.expiresIn }
+    );
 
     return authentication_token;
 }

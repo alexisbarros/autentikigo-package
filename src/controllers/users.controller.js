@@ -258,7 +258,6 @@ exports.readAllByCpf = async (queryParams, connectionParams) => {
         const usersToFront = users.map(user => {
             return {
                 ...userDTO.getUserDTO(user),
-                _id: user._id,
                 _createdBy: user._createdBy,
                 _ownedBy: user._ownedBy,
             };

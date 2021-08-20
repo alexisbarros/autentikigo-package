@@ -63,7 +63,7 @@ register = async (queryParams, connectionParams) => {
  * @property    {string}    jwtRefreshSecret    -required
  * @property    {string}    projectId           -required
  * @param       {string}    user                -required
- * @param       {string}    password            -required          
+ * @param       {string}    password            -required                   
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -81,21 +81,14 @@ login = async (queryParams, connectionParams) => {
         );
 
         // Authenticate user
-        const auth = await authController.login({
+        const user = await authController.login({
             user: queryParams.user,
             password: queryParams.password,
         }, {
             connectionString: connectionParams.connectionString
         });
 
-        if (auth.code !== 200) throw new Error(auth.message);
-
-        // Get user info
-        let user = await userController.readOneByUniqueId({
-            id: auth.data._id
-        }, {
-            connectionString: connectionParams.connectionString
-        });
+        if (user.code !== 200) throw new Error(user.message);
 
         // Check if project has already authorized
         const projects = (user.data.projects || []);
@@ -109,13 +102,15 @@ login = async (queryParams, connectionParams) => {
         const authentication_token = await authController.generateNewToken({
             jwtSecret: queryParams.jwtSecret,
             userId: user.data._id,
+            projectId: queryParams.projectId,
             acl: acl,
-            expiresIn: '10m'
+            expiresIn: project.projectId.toJSON().tokenTtl || '10m',
         });
 
         const authentication_refresh_token = await authController.generateNewToken({
             jwtSecret: queryParams.jwtRefreshSecret,
             userId: user.data._id,
+            projectId: queryParams.projectId,
             acl: acl,
             expiresIn: '7d'
         });
@@ -138,7 +133,7 @@ login = async (queryParams, connectionParams) => {
 /**
  * Authorize project of a logged user
  * @param       {object}    queryParams             -required
- * @property    {string}    projectId                -required
+ * @property    {string}    projectId               -required
  * @property    {string}    userId                  -required
  * @property    {string}    acl                    
  * @property    {boolean}   verified                    
@@ -299,8 +294,7 @@ middleware = async (queryParams, connectionParams) => {
  * Get user info.
  * @param       {object}    queryParams         -required
  * @property    {string}    token               -required
- * @property    {string}    jwtSecret           -required
- * @property    {string}    projectId            -required      
+ * @property    {string}    jwtSecret           -required     
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -310,7 +304,7 @@ getUserInfo = async (queryParams, connectionParams) => {
 
         // Check required params
         checkRequiredParams.checkParams(
-            ['token', 'projectId', 'jwtSecret', 'connectionString'],
+            ['token', 'jwtSecret', 'connectionString'],
             {
                 ...queryParams,
                 ...connectionParams
@@ -326,10 +320,11 @@ getUserInfo = async (queryParams, connectionParams) => {
         // Get user info
         let user = await authController.getUser({
             userId: payload.id,
-            projectId: queryParams.projectId,
+            projectId: payload.projectId,
         }, {
             connectionString: connectionParams.connectionString
         });
+        console.log(user.data);
         if (!user.data._id) throw new Error('User not found');
 
         return httpResponse.ok('User info successful returned', user.data);
@@ -346,8 +341,7 @@ getUserInfo = async (queryParams, connectionParams) => {
  * @param       {object}    queryParams         -required
  * @property    {string}    refreshToken        -required
  * @property    {string}    jwtSecret           -required
- * @property    {string}    jwtRefreshSecret    -required
- * @property    {string}    projectId            -required
+ * @property    {string}    jwtRefreshSecret    -required         
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -357,7 +351,7 @@ refreshToken = async (queryParams, connectionParams) => {
 
         // Check required params
         checkRequiredParams.checkParams(
-            ['refreshToken', 'projectId', 'jwtRefreshSecret', 'connectionString'],
+            ['refreshToken', 'jwtSecret', 'jwtRefreshSecret', 'connectionString'],
             {
                 ...queryParams,
                 ...connectionParams
@@ -370,7 +364,6 @@ refreshToken = async (queryParams, connectionParams) => {
             jwtSecret: queryParams.jwtRefreshSecret
         });
 
-
         // Check if user authorized project to get his data
         // Search user
         let user = await userController.readOneByUniqueId({
@@ -380,21 +373,10 @@ refreshToken = async (queryParams, connectionParams) => {
         });
         if (!user.data._id) throw new Error('User not found');
 
-        // Transform authorized projects in array of objectId
-        user.data.projects = (user.data.projects || []).map(el => el.projectId._id.toString());
-
-        // Get authorize project
-        const project = await projectController.readOneById({
-            id: queryParams.projectId
-        }, {
-            connectionString: connectionParams.connectionString
-        })
-        if (!project.data.name) throw new Error('Project does not exist. Check your project Id');
-
         // Check if project has already authorized
         const projects = (user.data.projects || []);
-        if (!projects.includes(project.data._id.toString()))
-            throw new Error('Client is not authorized');
+        const project = await projects.find(el => el.projectId._id.toString() === payload.projectId);
+        if (!project) throw new Error('Project does not have authorization');
 
         // Check refresh token
         const checkRefreshToken = await authController.tokenIsValid({
@@ -406,13 +388,15 @@ refreshToken = async (queryParams, connectionParams) => {
         const authentication_token = await authController.generateNewToken({
             jwtSecret: queryParams.jwtSecret,
             userId: payload.id,
+            projectId: payload.projectId,
             acl: payload.acl,
-            expiresIn: '10m'
+            expiresIn: project.projectId.toJSON().tokenTtl || '10m'
         });
 
         const authentication_refresh_token = await authController.generateNewToken({
             jwtSecret: queryParams.jwtRefreshSecret,
             userId: payload.id,
+            projectId: payload.projectId,
             acl: payload.acl,
             expiresIn: '7d'
         });
@@ -434,8 +418,9 @@ refreshToken = async (queryParams, connectionParams) => {
 /**
  * Generate token to recover password.
  * @param       {object}    queryParams         -required
- * @param       {string}    email               -required
+ * @property    {string}    email               -required
  * @property    {string}    jwtSecret           -required
+ * @property    {number}    tokenTtl           
  * @param       {object}    connectionParams    -required
  * @property    {string}    connectionString    -required
  */
@@ -465,7 +450,7 @@ generateRecoveryPasswordToken = async (queryParams, connectionParams) => {
         const recoveryPasswordToken = await authController.generateNewToken({
             jwtSecret: queryParams.jwtSecret,
             userId: user.data._id,
-            expiresIn: '10m',
+            expiresIn: `${queryParams.tokenTtl || 10}m`,
         });
 
         return httpResponse.ok('password recovery token successfully generated', { recoveryPasswordToken });
