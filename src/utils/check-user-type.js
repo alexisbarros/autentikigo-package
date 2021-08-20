@@ -24,9 +24,7 @@ const checkUserType = async (user) => {
     if (uniqueIdValidator.cpf.isValid(onlyNumberUser)) return 'cpf';
     if (uniqueIdValidator.cnpj.isValid(onlyNumberUser)) return 'cnpj';
 
-    if (user.includes('_')) return 'username';
-
-    return null;
+    return 'username';
 };
 
 module.exports = {

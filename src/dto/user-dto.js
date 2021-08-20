@@ -1,5 +1,6 @@
 exports.getUserDTO = (data) => {
     return {
+        _id: data._id,
         email: data.email,
         type: data.type,
         personInfo: data.personInfo,
